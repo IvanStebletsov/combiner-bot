@@ -1,0 +1,45 @@
+{
+    "name": "combiner_telegram_bot",
+    "version": "0.0.1",
+    "description": "Combiner Telegram bot",
+    "main": "app.js",
+    "scripts": {
+        "start": "npm install; npx tsc --build --verbose; node /usr/src/app/src/app.js",
+        "main": "npx tsc; node ./src/app.js --trace-deprecation",
+        "localize": "python3 Scripts/generate_localized.py",
+        "core": "python3 Scripts/update_bot_core.py",
+        "postcore": "npm update; git add .; git commit -m 'Core: Update'"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:IvanStebletsov/combiner-bot.git"
+    },
+    "keywords": [
+        "backend",
+        "bot"
+    ],
+    "author": "Ivan Stebletsov",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/IvanStebletsov/combiner-bot/issues"
+    },
+    "homepage": "https://github.com/IvanStebletsov/combiner-bot#readme",
+    "devDependencies": {
+        "@types/node": "^22.15.3",
+        "@types/node-fetch": "^2.6.12",
+        "@types/pg": "^8.11.14",
+        "prettier": "3.5.3",
+        "ts-node": "^10.9.2",
+        "ts-node-dev": "^2.0.0",
+        "typescript": "^5.8.3"
+    },
+    "dependencies": {
+        "@grammyjs/runner": "^2.0.3",
+        "dotenv": "^16.5.0",
+        "grammy": "^1.36.1",
+        "input": "^1.0.1",
+        "openai": "^4.97.0",
+        "telegraf-middleware-console-time": "^3.0.0",
+        "telegram": "^2.26.22"
+    }
+}

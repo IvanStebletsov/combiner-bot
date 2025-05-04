@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  app:
+    container_name: ${COMPOSE_PROJECT_NAME}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - COMPOSE_PROJECT_NAME
+      - TELEGRAM_BOT_API_TOKEN=${TELEGRAM_BOT_API_TOKEN}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DATABASE_NAME=${POSTGRES_DATABASE_NAME}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - GOOGLE_APPLICATION_CREDENTIALS_JSON=${GOOGLE_APPLICATION_CREDENTIALS_JSON}
+      - PROJECT_NAME=${PROJECT_NAME}
+      - PAYMENT_TOKEN_YOO_MONEY=${PAYMENT_TOKEN_YOO_MONEY}
+      - INSTAGRAM_COOKIE=${INSTAGRAM_COOKIE}
+    ports:
+      - "${TELEGRAM_BOT_PORT}:${TELEGRAM_BOT_PORT}"
+    volumes:
+      - ~/.ssh:/root/.ssh
+    command: npm start
