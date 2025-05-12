@@ -4,48 +4,12 @@ import * as localized from "./Localized.json"
 
 export class Localized {
     /**
-     * - ru: 👋 *Привет!*Я помогу тебе скачать из Instagram и TikTok:– Фото 📸– Видео 📹– Истории 🎭– Музыку 🎧Шли мне ссылки на посты из приложения, а я постараюсь их скачать и прислать тебе, чтобы ты мог сохранить их у себя и поделиться с друзьями в мессенджерах.❗️P.S.: Имей в виду, что посты должны быть из *открытых аккаунтов*.
+     * - ru: 👋 *Привет!*Я помогу тебе быть в курсе того, что обсуждается в длинных переписках без долгого вникания в их суть, прочту их за тебя, кратко перескажу содержание и выделю то, что может быть важным.Для работы мне будет необходим доступ к твоему Telegram аккаунту, это не совсем безопасно, поэтому если сомневаешься стоит ли мной пользоваться, то лучше не пользуйся, иначе мне придтся хранить некоторые твои идентификаторы в базе данных в незашифрованном виде, а именно *api_id*, *api_hash* и *session_id*.Если ты твердо и четко решил, что готов предоставить мне доступ, то вызови команду /how\_to\_grant\_access и следуй инструкции.❗ У тебя всегда есть опции сбросить свои идентификаторы в консоли Telegram, разлогинить меня из своего аккаунта через клиент Telegram, а также попросить меня удалить твои идентификаторы из моей базы.
      * - en: 👋 *Hi!* I will help you download from Instagram and TikTok:– Photos 📸– Videos 📹– Stories 🎭– Music 🎧Send me links to posts from the application, and I will try to download them and send them to you so that you can keep them and share them with friends in messengers.❗️P.S.: Keep in mind that posts should come from *open accounts*.
      */
     static welcome_message_initial(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
         return localized.welcome_message_initial[languageCode]
-    }
-
-    /**
-     * - ru: ❓ *F\.A\.Q\. \(Часто задаваемые вопросы\)**Как работают токены в вашем сервисе\?* 🎫Для использования нашего сервиса вам понадобятся токены\. Каждое слово в ваших вводных данных или запросе, а также каждое слово в ответе нашего ассистента, стоит **1 токен**\. Все запросы рассчитываются на основании количества слов, что определяет потребность в токенах\. Токены можно приобрести, используя команду /top\_up в боте🚗 *Как добавить мой автомобиль в систему\?*Перейдите в /settings и следуйте инструкциям для добавления нового автомобиля\. Вы можете добавить и управлять несколькими автомобилями\.🌐 *Как изменить язык бота\?*Вы можете легко изменить язык общения бота в /settings\. Мы поддерживаем несколько языков для вашего удобства\.💬 *Бот говорит слишком профессионально \(или слишком просто\)\. Могу ли я изменить это\?*Конечно\! Вы можете выбрать стиль общения бота в /settings\. Он может говорить как профессионал, как гаражный механик или объяснять все как для детей\.🔍 *Бот дает слишком короткие ответы на мои вопросы\. Что делать\?*Мы создали бота таким образом, чтобы он предоставлял краткие, сжатые ответы для быстрого ознакомления\. Если вам нужно больше информации, просто нажмите кнопку "Подробнее"\.🧠 *Как бот сохраняет контекст моих сообщений\?*Бот автоматически сохраняет историю общения для более точного и последовательного ответа на ваши вопросы\. Это значит, что вы можете продолжить обсуждение проблемы, как если бы вы общались с настоящим человеком\. Например, вы спросили\:_Моя машина перегревается после 5 минут работы_и бот ответил\:_1\. Проверьте уровень антифриза в системе охлаждения\.2\. Проверьте работоспособность вентилятора радиатора_\.Затем, если вы спросите\:_Как проверить работоспособность вентилятора\?_Бот будет понимать, что вы обсуждаете второй пункт его предыдущего ответа и предоставит подробные инструкции по проверке вентилятора радиатора\. Чтобы сбросить контекст и начать обсуждение новой проблемы, просто еще раз вызовете команду /start\.🔄 *Я перешел на другую тему, будет ли бот понимать меня\?*Благодаря сохранению контекста, бот может следовать за изменением темы в разговоре\. Однако, чтобы обеспечить наиболее точные ответы, рекомендуется сохранять каждую тему отдельно и ясно формулировать вопросы\.🆘 *Мне нужна дополнительная помощь или у меня есть проблемы с ботом\. Что мне делать\?*Если у вас возникли проблемы или вам нужна дополнительная помощь, не стесняйтесь обращаться к нам \(@mattisssa, @IvanStebletsov\)\. Мы здесь, чтобы помочь вам\!🤝 Мы надеемся, что эта информация поможет вам в работе с нашим ботом\. Если у вас возникнут другие вопросы, мы всегда готовы помочь\!
-     * - en: ❓ *F\.A\.Q\. \(Frequently Asked Questions\)**How do I add my car to the system\?*Go to /settings and follow the instructions to add a new car\. You can add and manage multiple cars\.*How do I change the bot's language\?*You can easily change the bot's language in /settings\. We support multiple languages for your convenience\.*The bot talks too professionally \(or too simply\)\. Can I change that\?*Certainly\! You can select the bot's communication style in /settings\. It can speak like a professional, like a garage mechanic, or explain everything as if for children\.*The bot gives too short answers to my questions\. What to do\?*We designed the bot to provide brief, compressed answers for quick reference\. If you need more information, just click the "more details" button\.*How does the bot preserve the context of my messages\?*The bot automatically saves the chat history for more accurate and consistent responses to your questions\. This means you can continue discussing the problem as if you were talking to a real person\. For example, you asked\:_My car is overheating after 5 minutes of running_and the bot responded\:_1\. Check the coolant level in the cooling system\.2\. Check the radiator fan operation_\.3\. \.\.\.Then, if you ask\:_How to do the point 2\?_The bot will understand that you are discussing the second point of its previous response and will provide detailed instructions on how to check the radiator fan\.*I switched to another topic, will the bot understand me\?*Thanks to preserving the context, the bot can follow the change of topics in the conversation\. However, to ensure the most accurate answers, it is recommended to keep each topic separate and to formulate questions clearly\.*I need additional help or I have problems with the bot\. What should I do\?*If you have any problems or need additional help, don't hesitate to contact us \(@mattisssa, @IvanStebletsov\)\. We are here to help you\!We hope this information will help you work with our bot\. If you have any other questions, we are always ready to help\!
-     */
-    static faq_text(userId: number): string {
-        const languageCode = this.getLanguageCode(userId)
-        return localized.faq_text[languageCode]
-    }
-
-    /**
-     * - ru: SourceUrl: {0} и destinationUrl: {1} сохранение завершилось с ошибкой.{2}
-     * - en: SourceUrl: {0} and destinationUrl: {1} saving has failed.{2}
-     */
-    static url_saving_failed(param0: any, param1: any, param2: any, userId: number): string {
-        const languageCode = this.getLanguageCode(userId)
-        return this.formatString(localized.url_saving_failed[languageCode], param0, param1, param2)
-    }
-
-    /**
-     * - ru: Получение destinationUrl для sourceUrl: {0} завершилось с ошибкой.{1}
-     * - en: DestinationUrl fetching for sourceUrl: {0} has failed.{1}
-     */
-    static url_getting_failed(param0: any, param1: any, userId: number): string {
-        const languageCode = this.getLanguageCode(userId)
-        return this.formatString(localized.url_getting_failed[languageCode], param0, param1)
-    }
-
-    /**
-     * - ru: Кажется я не могу ничего скачать из этой соц сети. Либо что-то не так с URL 🧐
-     * - en: It seems I can't download anything from this social network. Or something is wrong with the URL 🧐
-     */
-    static unsupported_resource_for_downloading(userId: number): string {
-        const languageCode = this.getLanguageCode(userId)
-        return localized.unsupported_resource_for_downloading[languageCode]
     }
 
     /**
@@ -58,48 +22,156 @@ export class Localized {
     }
 
     /**
-     * - ru: 🎚 *Настройки*Здесь ты можешь изменить язык интерфейса
-     * - en: 🎚 *Settings*Here you can change the interface language
+     * - ru: 🗂️ Выбери папку для просмотра чатов:
+     * - en: 🗂️ Select a folder to view chats in:
      */
-    static settings_description(userId: number): string {
+    static list_of_folders_message(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
-        return localized.settings_description[languageCode]
+        return localized.list_of_folders_message[languageCode]
     }
 
     /**
-     * - ru: Мы получили ошибку 404: Not Found 🚧.Кажется такого материала больше не существует 🙅🏻‍♂️URL: {0}
-     * - en: We received the error 404: Not Found 🚧.It seems that such material no longer exists 🙅🏻‍♂️URL: {0}
+     * - ru: 💬 Выбери чат в котором нужно прочитать сообщения:
+     * - en: 💬 Select the chat where you want to read the messages:
      */
-    static error_not_found(param0: any, userId: number): string {
+    static list_of_chats_message(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
-        return this.formatString(localized.error_not_found[languageCode], param0)
+        return localized.list_of_chats_message[languageCode]
     }
 
     /**
-     * - ru: Мы получили ошибку 401: Unauthorized 🔒.Доступ к данному материалу закрыт 🙅🏻‍♂️.Имей в виду, что посты должны быть из *открытых аккаунтов*URL: {0}
-     * - en: We received the error 401: Unauthorized 🔒.Access to this material is closed 🙅🏻‍♂️.Keep in mind that posts should come from *open accounts*.URL: {0}
+     * - ru: 🤔 Как авторизоваться?
+     * - en: 🤔 How to logged in?
      */
-    static error_unauthorized(param0: any, userId: number): string {
+    static how_to_grant_access_message_action(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
-        return this.formatString(localized.error_unauthorized[languageCode], param0)
+        return localized.how_to_grant_access_message_action[languageCode]
     }
 
     /**
-     * - ru: Данный вид сообщений пока не поддерживается
-     * - en: This type of message is not supported yet
+     * - ru: Чтобы предоставить мне доступ к твоему Telegram аккаунту:1\) Перейди на сайт *Telegram core*: https://my\.telegram\.org2\) Авторизауйся по своему номеру телефона3\) Перейди в раздел *API development tools*4\) Заполни чем угодно поля *App title*, *Short name* и *Description*, поле *URL* можешь оставить пустым, а в *Platform* выбери *Other*5\) Нажми *Create application* чтобы завершить создание приложения6\) После создания приложения появятся поля *App api\_id* и *App api\_hash*, их нужно передать мне, для этого нажми кнопку внизу
+     * - en: To give me access to your Telegram account:1\) Go to the *Telegram core* website: https://my\.telegram\.org2\) Log in using your phone number3\) Go to the *API development tools* section4\) Fill in the *App title*, *Short name* and *Description* fields with anything, you can leave the *URL* field empty, and in *Platform* select *Other*5\) Click *Create application* to complete creating an application6\) After creating the application, the fields *App api\_id* and *App api\_hash* will appear, they need to be sent to me, to do this, click button at the bottom
+     */
+    static how_to_grant_access_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.how_to_grant_access_message[languageCode]
+    }
+
+    /**
+     * - ru: 🔒 Ты не авторизован.{0}
+     * - en: 🔒 You are not logged in.{0}
+     */
+    static unauthorized_message(param0: any, userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return this.formatString(localized.unauthorized_message[languageCode], param0)
+    }
+
+    /**
+     * - ru: Авторизуйся повторно. Кстати, твои текущие *app_id* и *app_hash* еще актуальны или нужно использовать новые?
+     * - en: Log in again. By the way, your current *app_id* and *app_hash* still relevant or do I need to use new ones?
+     */
+    static unauthorized_message_details(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.unauthorized_message_details[languageCode]
+    }
+
+    /**
+     * - ru: 👌🏻 Да
+     * - en: 👌🏻 Yes
+     */
+    static unauthorized_positive_action(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.unauthorized_positive_action[languageCode]
+    }
+
+    /**
+     * - ru: 🙅🏻‍♂️ Нет
+     * - en: 🙅🏻‍♂️ No
+     */
+    static unauthorized_negative_action(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.unauthorized_negative_action[languageCode]
+    }
+
+    /**
+     * - ru: 👌🏻 Авторизоваться
+     * - en: 👌🏻 Authorize
+     */
+    static authorize_action(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.authorize_action[languageCode]
+    }
+
+    /**
+     * - ru: ↩️ Назад
+     * - en: ↩️ Back
+     */
+    static back_action(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.back_action[languageCode]
+    }
+
+    /**
+     * - ru: Передать идентификаторы
+     * - en: Give IDs
+     */
+    static give_ids(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.give_ids[languageCode]
+    }
+
+    /**
+     * - ru: Скопируй и пришли свой *app_id*
+     * - en: Copy and send your *app_id*
+     */
+    static add_app_id_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.add_app_id_message[languageCode]
+    }
+
+    /**
+     * - ru: Отлично! 👍Теперь, скопируй и пришли свой *app_hash*
+     * - en: Great! 👍Now, copy and send your *app_hash*
+     */
+    static add_app_hash_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.add_app_hash_message[languageCode]
+    }
+
+    /**
+     * - ru: Супер! 🤩Теперь напиши свой номер телефона в формате +CODENUMBER, где CODE - код страны, например +7 и NUMBER - номер телефона. На этот номер я отправлю код доступа.
+     * - en: Super! 🤩Now write your phone number in the +CODENUMBER format, where CODE is county code, for example +7 and NUMBER is the phone number. I will send the access code to this number.
+     */
+    static phone_number_request_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.phone_number_request_message[languageCode]
+    }
+
+    /**
+     * - ru: Замечательно! 🌈Теперь, скопируй и пришли код, который я выслал в формате "X X X X X" с пробелом после каждой цифры кода, напирмер 72134 -> 7 2 1 3 4
+     * - en: Wonderful! 🌈 Now, copy and send the code that I sent in the "X X X X X" format with space after each digit, for example 72134 -> 7 2 1 3 4
+     */
+    static auth_code_request_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.auth_code_request_message[languageCode]
+    }
+
+    /**
+     * - ru: И последнее! 😮‍💨У тебя установлена *2FA*, мне нужен твой *облачный пароль*. Хранить мы его не будем 🤞🏻.
+     * - en: And one last thing! 😮‍💨 You have *2FA* installed, I need your *cloud password*. We will not keep it 🤞🏻.
+     */
+    static two_fa_password_request_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.two_fa_password_request_message[languageCode]
+    }
+
+    /**
+     * - ru: Данный вид сообщений не поддерживается
+     * - en: This type of message is not supported
      */
     static unsupported_message_type(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
         return localized.unsupported_message_type[languageCode]
-    }
-
-    /**
-     * - ru: Что-то пошло не так, но вот ссылка для скачай.{1}
-     * - en: Something went wrong, but here is the link for downloading.{1}
-     */
-    static something_went_wrong(param0: any, userId: number): string {
-        const languageCode = this.getLanguageCode(userId)
-        return this.formatString(localized.something_went_wrong[languageCode], param0)
     }
 
     private static getLanguageCode(userId: number): string {

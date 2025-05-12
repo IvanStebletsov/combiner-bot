@@ -1,6 +1,6 @@
-import { Context } from "grammy"
 import { InlineKeyboardMarkup, ParseMode } from "grammy/types"
 import { CoreErrorHandler } from "./CoreErrorHandler"
+import { BotContext } from "../Types/BotContext"
 
 type Abbreviations = {
 	[key: string]: number
@@ -82,8 +82,21 @@ export class CoreUtils {
 	 * @param inputString
 	 * @returns
 	 */
-	static removeWhitespace(inputString: string): string {
+	static removeWhitespaces(inputString: string): string {
 		return inputString.replace(/[\n\t\r]/g, "")
+	}
+
+	/**
+	 * Removes all multiple spaces and tabs from string
+	 * @param inputString
+	 * @returns
+	 */
+	static removeMultiSpaces(inputString: string): string {
+		return inputString.replace(/\s\s+/g, " ")
+	}
+
+	static removeWhitespacesAndMultiSpaces(inputString: string): string {
+		return this.removeMultiSpaces(this.removeWhitespaces(inputString))
 	}
 
 	/**
@@ -137,7 +150,7 @@ export class CoreUtils {
 	 */
 	static async replayWithChunks(
 		message: string,
-		context: Context,
+		context: BotContext,
 		reply_markup?: InlineKeyboardMarkup,
 		parseMode?: ParseMode
 	) {
@@ -180,7 +193,7 @@ export class CoreUtils {
 	 */
 	static async editMessageWithChunks(
 		message: string,
-		context: Context,
+		context: BotContext,
 		reply_markup?: InlineKeyboardMarkup,
 		parseMode?: ParseMode
 	) {
@@ -207,6 +220,15 @@ export class CoreUtils {
 				)
 				.catch((error) => CoreErrorHandler.handle(error))
 		}
+	}
+
+	static chunked<T>(array: T[], chunkSize: number): T[][] {
+		const result: T[][] = []
+
+		for (let i = 0; i < array.length; i += chunkSize) {
+			result.push(array.slice(i, i + chunkSize))
+		}
+		return result
 	}
 
 	/**

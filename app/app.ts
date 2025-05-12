@@ -1,125 +1,98 @@
-import input from "input"
 import * as dotenv from "dotenv"
+import { session } from "grammy"
 import { run } from "@grammyjs/runner"
 import { Assembly } from "./Helpers/Assembly"
-import { generateUpdateMiddleware } from "telegraf-middleware-console-time/dist"
-import { CoreErrorHandler } from "./Helpers/CoreErrorHandler"
+import { Command } from "./Handlers/CommandHandler/Command"
 import { CoreLogger } from "./Helpers/CoreLogger/CoreLogger"
-import { Context } from "grammy"
-import { Message } from "./Models/Message"
+import { CoreErrorHandler } from "./Helpers/CoreErrorHandler"
+import { CallbackQuery } from "./Handlers/CallbackHandler/CallbackQuery"
+import { generateUpdateMiddleware } from "telegraf-middleware-console-time/dist"
+import { TablesQueries as tablesQueries } from "./Database/SQLQueries/TablesQueries"
 
 dotenv.config()
 
 class App {
 	private bot = Assembly.shared.bot
-	private client = Assembly.shared.client
+	private database = Assembly.shared.database
+	private commandHandler = Assembly.shared.commandHandler
+	private lastSeenMiddleware = Assembly.shared.lastSeenMiddleware
+	private cacheMiddleware = Assembly.shared.cacheMiddleware
+	private callbackHandler = Assembly.shared.callbackHandler
 	private messageHandler = Assembly.shared.messageHandler
 
 	async main() {
+		this.bot.use(session({ initial: (): BotSessionData => ({}) }))
+
 		// Middleware
 		this.bot.use(generateUpdateMiddleware())
+		this.bot.use((context, next) => this.lastSeenMiddleware.handleLastSeenDate(context, next))
+		this.bot.use((context, next) => this.cacheMiddleware.handleCache(context, next))
+
+		// Commands
+		this.bot.command(Command.Start, (context) => this.commandHandler.handleStart(context))
+		this.bot.command(Command.ListOfFolders, (context) => this.commandHandler.handleListOfFolders(context))
+		this.bot.command(Command.ListOfAllUnreadedChats, (context) =>
+			this.commandHandler.handleListOfAllUnreadedChats(context)
+		)
+		this.bot.command(Command.HowToGrantAccess, (context) => this.commandHandler.handleHowToGrantAccess(context))
+
+		// Handle events
+		this.bot.callbackQuery(CallbackQuery.GiveAppCreds().regex, (context) =>
+			this.callbackHandler.handleGiveAppCreds(context)
+		)
+		this.bot.callbackQuery(CallbackQuery.GiveAuthCreds().regex, (context) =>
+			this.callbackHandler.handleGiveAuthCreds(context)
+		)
+		this.bot.callbackQuery(CallbackQuery.AddApiId().regex, (context) => this.callbackHandler.handleAddApiId(context))
+		this.bot.callbackQuery(CallbackQuery.Authorize().regex, (context) => this.callbackHandler.handleAuthorize(context))
+		this.bot.callbackQuery(CallbackQuery.HowToGrantAccess().regex, (context) =>
+			this.commandHandler.handleHowToGrantAccess(context)
+		)
+		this.bot.callbackQuery(CallbackQuery.ListOfFolders().regex, (context) =>
+			this.commandHandler.handleListOfFolders(context)
+		)
+		this.bot.callbackQuery(CallbackQuery.ListOfChats().regex, (context) =>
+			this.commandHandler.handleListOfChats(context)
+		)
 
 		// Messages
-		this.bot.on("message", (context) => {
-			// this.messageHandler.handleMessage(context)
-			this.start(context)
-		})
+		this.bot.on("message", (context) => this.messageHandler.handleMessage(context))
 
 		this.bot.catch((error) => CoreErrorHandler.handle(error))
 
+		// Connect to database
+		this.database.connect()
+
+		// Database establishment
+		await this.setupDatabase()
+
 		// Bot launch
 		run(this.bot)
-
-		CoreLogger.log([{ text: `Bot is running...`, fg: "green" }])
 	}
 
-	async start(context: Context) {
-		await this.client.connect()
-		const isAuthorized = await this.client.checkAuthorization()
-
-		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
-
-		if (isAuthorized) {
-			const chats = await this.client.getDialogs()
-				// .filter((dialog) => dialog.unreadCount > 0)
-				// .sort((lhs, rhs) => rhs.unreadCount - lhs.unreadCount)
-
-			const chat = chats.find((dialog) => dialog.entity?.id.toString() == "1996184293")
-
-			CoreLogger.log([{ text: `[TOTAL DIALOGS]: ${chats.total}`, fg: "green" }])
-
-			// for (const dialog of unreadedDialogs) {
-			if (chat) {
-				CoreLogger.log([{ text: `[DIALOG]: ${chat.title} - ${chat.unreadCount} (${chat.entity?.id})`, fg: "green" }])
-
-				var counter = chat.unreadCount
-				var unreadMessages: Array<Message> = []
-
-				for await (const message of this.client.iterMessages(chat.entity)) {
-					if (!message.text) {
-						continue
-					}
-
-					if (counter < 1) {
-						break
-					}
-
-					var username = ""
-
-					if (message.fromId) {
-						const entity = await this.client.getEntity(message.fromId)
-						const firstName = entity["firstName"]
-						const lastName = entity["lastName"]
-						const nickName = entity["username"]
-
-						if (firstName) {
-							username += firstName
-						}
-
-						if (lastName) {
-							username += ` ${lastName}`
-						}
-
-						if (nickName) {
-							username += ` (@${nickName})`
-						}
-					}
-
-					// console.log(JSON.stringify(message, null, 4))
-					const date = new Date(message.date * 1000)
-					const unreadMessage = new Message(
-						username,
-						message.date,
-						date,
-						message.text
-					)
-					unreadMessages.push(unreadMessage)
-
-					// CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null, 4)}`, fg: "green" }])
-
-					// await context.reply(`👤 ${username}\n\n✉️ ${message.text}`)
-					counter -= 1
-			 	}
-
-
-				 CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null, 4)}`, fg: "green" }])
-			}
-			// }
-		} else {
-			this.authorize()
+	async setupDatabase(): Promise<any> {
+		if (!process.env.PROJECT_NAME) {
+			console.error("PROJECT_NAME is not defined")
+			return Promise.resolve(undefined)
 		}
-	}
-
-	async authorize() {
-		await this.client.start({
-			phoneNumber: async () => await input.text("Please enter your number: "),
-			password: async () => await input.text("Please enter your password: "),
-			phoneCode: async () => await input.text("Please enter the code you received: "),
-			onError: (err) => console.log(err),
-		})
-		console.log("You should now be connected.");
-		console.log(this.client.session.save()); // Save this string to avoid logging in again
-		// await this.client.sendMessage("me", { message: "Hello!" });
+		return this.database
+			.query(tablesQueries.createUsers)
+			.then(() => {
+				CoreLogger.log([{ text: `[DATABASE]:`, fg: "yellow" }, { text: ` Users table created successfully.` }])
+				return this.database.query(tablesQueries.createTelegramClientCredentials)
+			})
+			.then(() => {
+				CoreLogger.log([{ text: `[DATABASE]:`, fg: "yellow" }, { text: ` Messages table created successfully.` }])
+				return this.database.query(tablesQueries.createSettings(process.env.PROJECT_NAME!))
+			})
+			.then(() => {
+				CoreLogger.log([
+					{ text: `[DATABASE]:`, fg: "yellow" },
+					{ text: ` Telegram Client Credentials table created successfully.` }
+				])
+				return new Promise((resolve) => resolve(undefined))
+			})
+			.catch((error) => CoreErrorHandler.handle(error))
 	}
 }
 
