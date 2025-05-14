@@ -32,4 +32,5 @@ jobs:
             export POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
             export COMPOSE_PROJECT_NAME=${{ secrets.COMPOSE_PROJECT_NAME }}
             export PROJECT_NAME=${{ secrets.PROJECT_NAME }}
+            export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             docker-compose up -d --build
