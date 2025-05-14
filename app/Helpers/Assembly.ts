@@ -11,9 +11,14 @@ import { TelegramService } from "../Services/TelegramService/TelegramService"
 import { State } from "./State"
 import { BotContext } from "../Types/BotContext"
 import { GPTService } from "../Services/GPTService/GPTService"
+import { CoreLogger } from "./CoreLogger/CoreLogger"
 
 export class Assembly {
 	static shared = new Assembly()
+
+	constructor() {
+		CoreLogger.log([{ text: `[ENV]:`, fg: "yellow" }, { text: ` ${JSON.stringify(process.env, null, 4)}` }])
+	}
 
 	bot = new Bot<BotContext>(process.env.TELEGRAM_BOT_API_TOKEN!)
 	database = new Pool({
