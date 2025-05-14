@@ -18,10 +18,10 @@ jobs:
           key: ${{ secrets.TRUSTED_MACHINE_PRIVATE_SSH_ID_RSA }}
           port: ${{ secrets.DROPLET_SSH_PORT }}
           script: |
-            rm -rf /usr/src/downloader-bot
+            rm -rf /usr/src/combiner-bot
             cd /usr/src
-            git clone git@github.com:IvanStebletsov/downloader-bot.git
-            cd /usr/src/downloader-bot/app
+            git clone git@github.com:IvanStebletsov/combiner-bot.git
+            cd /usr/src/combiner-bot/app
             export TELEGRAM_BOT_API_TOKEN=${{ secrets.TELEGRAM_BOT_API_TOKEN }}
             export TELEGRAM_BOT_PORT=${{ secrets.TELEGRAM_BOT_PORT }}
             export POSTGRES_USER=${{ secrets.POSTGRES_USER }}

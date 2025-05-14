@@ -2,7 +2,7 @@ import { BaseError } from "./BaseError"
 import { ErrorCode } from "./ErrorCode"
 
 export class TelegramServiceError extends BaseError {
-	constructor(code: "no_api_id" | "no_api_hash" | "user_not_authorized" | ErrorCode) {
+	constructor(code: "no_api_id" | "no_api_hash" | "user_not_authorized" | "no_chat_with_id" | ErrorCode) {
 		var message = "❌ Something went wrong"
 		var errorCode = TelegramServiceError.makeErrorCode(0)
 

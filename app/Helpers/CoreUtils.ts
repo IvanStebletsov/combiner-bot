@@ -77,6 +77,15 @@ export class CoreUtils {
 		return undefined
 	}
 
+	static escapeTelegramMarkdown(value: string): string {
+		return value.replace(/([*_`[\]])/g, "\\$1")
+	}
+
+	static splitByDoubleNewline(str: string): string[] {
+		const chunks = str === "" ? [] : str.split(/\n{2}/)
+		return chunks.filter((chunk) => chunk !== "")
+	}
+
 	/**
 	 * Removes all whitespace from string
 	 * @param inputString
@@ -228,6 +237,16 @@ export class CoreUtils {
 		for (let i = 0; i < array.length; i += chunkSize) {
 			result.push(array.slice(i, i + chunkSize))
 		}
+		return result
+	}
+
+	static chunkedString(string: string, chunkSize: number): string[] {
+		const result: string[] = []
+
+		for (let i = 0; i < string.length; i += chunkSize) {
+			result.push(string.slice(i, i + chunkSize))
+		}
+
 		return result
 	}
 

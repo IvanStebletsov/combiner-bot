@@ -73,40 +73,6 @@ export class MessageHandler {
 		}
 	}
 
-	private async handleCommonMessage(context: BotContext) {
-		if (!context.from || !context.chat || !context.message || !context.message?.text) {
-			return
-		}
-
-		// Store sent loading message here to be able delete it
-		var loadingMessage: Message.TextMessage | undefined
-
-		try {
-			// Show loading message ⏳ and store it in variable
-			loadingMessage = await context.reply(Localized.loading_message(context.from.id), {
-				disable_notification: true
-			})
-		} catch (error) {
-			if (loadingMessage) {
-				context.api
-					.deleteMessage(loadingMessage.chat.id, loadingMessage.message_id)
-					.catch((error) => CoreErrorHandler.handle(error))
-			}
-
-			CoreErrorHandler.handle(error)
-		}
-	}
-
-	private async deleteLoadingMessage(context: BotContext, message: Message.TextMessage | undefined) {
-		if (!message) {
-			return
-		}
-
-		await context.api
-			.deleteMessage(message.chat.id, message.message_id)
-			.catch((error) => CoreErrorHandler.handle(error))
-	}
-
 	private async handleUnsupportedMessage(context: BotContext) {
 		if (!context.from) {
 			return

@@ -10,6 +10,7 @@ import { LastSeenMiddleware } from "../Handlers/LastSeenMiddleware/LastSeenMiddl
 import { TelegramService } from "../Services/TelegramService/TelegramService"
 import { State } from "./State"
 import { BotContext } from "../Types/BotContext"
+import { GPTService } from "../Services/GPTService/GPTService"
 
 export class Assembly {
 	static shared = new Assembly()
@@ -23,9 +24,10 @@ export class Assembly {
 		port: Number(process.env.POSTGRES_PORT)
 	})
 	state = new State()
+	gptService = new GPTService()
 	usersService = new UsersService(this.database)
 	telegramService = new TelegramService(this.bot, this.usersService, this.state)
-	commandHandler = new CommandHandler(this.usersService, this.telegramService)
+	commandHandler = new CommandHandler(this.usersService, this.telegramService, this.gptService)
 	lastSeenMiddleware = new LastSeenMiddleware(this.usersService)
 	cacheMiddleware = new CacheMiddleware(this.usersService, CoreCache.shared)
 	callbackHandler = new CallbackHandler(this.usersService, this.telegramService)

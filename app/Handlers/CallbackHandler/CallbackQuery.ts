@@ -7,7 +7,7 @@ export class CallbackQuery {
 	}
 
 	static HowToGrantAccess(from?: CallSource): { query: string; regex: RegExp } {
-		return this.makeQuery("how_to_grant_access", { from: from })
+		return this.makeQuery("h_t_gr_acc", { from: from })
 	}
 
 	static GiveAuthCreds(from?: CallSource): { query: string; regex: RegExp } {
@@ -23,7 +23,7 @@ export class CallbackQuery {
 	}
 
 	static ListOfFolders(from?: CallSource, page?: number): { query: string; regex: RegExp } {
-		return this.makeQuery("list_of_folders", {
+		return this.makeQuery("fd_lst", {
 			from: from,
 			pg: page
 		})
@@ -31,20 +31,29 @@ export class CallbackQuery {
 
 	static ListOfChats(
 		from?: CallSource,
+		allUnread?: boolean,
 		page?: number,
 		folder?: number,
 		foldersPage?: number
 	): { query: string; regex: RegExp } {
-		return this.makeQuery("list_of_chats", {
+		return this.makeQuery("chts_lst", {
 			from: from,
+			a_urnd: allUnread,
 			pg: page,
 			fd: folder,
 			fd_pg: foldersPage
 		})
 	}
 
+	static ReadUnreadChatMessages(from?: CallSource, chatId?: number): { query: string; regex: RegExp } {
+		return this.makeQuery("rd_unrd_cht_msgs", {
+			from: from,
+			cid: chatId
+		})
+	}
+
 	static DoNothing(from?: CallSource): { query: string; regex: RegExp } {
-		return this.makeQuery("do_nothing", { from: from })
+		return this.makeQuery("do_nthg", { from: from })
 	}
 
 	private static makeQuery(path: string, query: Record<string, any> = {}): { query: string; regex: RegExp } {

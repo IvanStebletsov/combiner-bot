@@ -1,4 +1,4 @@
-import { CoreLogger } from "./CoreLogger/CoreLogger";
+import { CoreLogger } from "./CoreLogger/CoreLogger"
 
 /**
  * Handler for errors

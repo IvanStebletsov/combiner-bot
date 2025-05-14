@@ -1,4 +1,4 @@
-import { User } from "grammy/types"
+import { Message, User } from "grammy/types"
 import { CoreUtils } from "../../Helpers/CoreUtils"
 import { BotContext } from "../../Types/BotContext"
 import { CallbackQuery } from "../CallbackHandler/CallbackQuery"
@@ -7,16 +7,19 @@ import { Localized } from "../../Resources/Localizations/Localized"
 import { UsersService } from "../../Services/UserService/UserService"
 import { InlineKeyboardBuilder } from "../../Helpers/InlineKeyboardBuilder"
 import { TelegramService } from "../../Services/TelegramService/TelegramService"
-import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
 import { CallSource } from "../../Types/CallSource"
+import { GPTService } from "../../Services/GPTService/GPTService"
+import { CoreLogger } from "../../Helpers/CoreLogger/CoreLogger"
 
 export class CommandHandler {
 	private usersService: UsersService
 	private telegramService: TelegramService
+	private gptService: GPTService
 
-	constructor(usersService: UsersService, telegramService: TelegramService) {
+	constructor(usersService: UsersService, telegramService: TelegramService, gptService: GPTService) {
 		this.usersService = usersService
 		this.telegramService = telegramService
+		this.gptService = gptService
 	}
 
 	async handleStart(context: BotContext) {
@@ -50,7 +53,7 @@ export class CommandHandler {
 				if (pages.length > 0) {
 					for (const chat of pages[page]) {
 						if (chat.title) {
-							buttons.push([[chat.title, CallbackQuery.ListOfChats("list_of_folders", undefined, chat.id, page).query]])
+							buttons.push([[chat.title, CallbackQuery.ListOfChats("fd_lst", undefined, page, chat.id).query]])
 						}
 					}
 				}
@@ -59,13 +62,13 @@ export class CommandHandler {
 					const arrows: Array<[string, string]> = []
 
 					if (page > 0) {
-						arrows.push(["◀️", CallbackQuery.ListOfFolders("list_of_folders", page - 1).query])
+						arrows.push(["◀️", CallbackQuery.ListOfFolders("fd_lst", page - 1).query])
 					}
 
-					arrows.push([`${page + 1} / ${pages.length}`, CallbackQuery.DoNothing("list_of_folders").query])
+					arrows.push([`${page + 1} / ${pages.length}`, CallbackQuery.DoNothing("fd_lst").query])
 
 					if (page < pages.length - 1) {
-						arrows.push(["▶️", CallbackQuery.ListOfFolders("list_of_folders", page + 1).query])
+						arrows.push(["▶️", CallbackQuery.ListOfFolders("fd_lst", page + 1).query])
 					}
 
 					buttons.push(arrows)
@@ -89,44 +92,30 @@ export class CommandHandler {
 						.catch((error) => CoreErrorHandler.handle(error))
 				}
 			})
-			.catch(async (error) => {
-				CoreErrorHandler.handle(error)
-
-				if (!context.from) {
-					return
-				}
-
-				if (error instanceof TelegramServiceError) {
-					await context
-						.reply(Localized.unauthorized_message("", context.from.id), {
-							parse_mode: "Markdown",
-							reply_markup: InlineKeyboardBuilder.makeKeyboard([
-								[
-									Localized.how_to_grant_access_message_action(context.from?.id),
-									CallbackQuery.HowToGrantAccess("list_of_all_unreaded_chats").query
-								]
-							])
-						})
-						.catch((error) => CoreErrorHandler.handle(error))
-				}
-			})
+			.catch(async (error) => CoreErrorHandler.handle(error))
 	}
 
 	async handleListOfAllUnreadedChats(context: BotContext) {
-		await this.handleListOfChats(context, "list_of_all_unreaded_chats", true)
+		await this.handleListOfChats(context, "a_unrd_chts_lst", true)
 	}
 
-	async handleListOfChats(context: BotContext, from: CallSource = "list_of_chats", allUnread?: boolean) {
+	async handleListOfChats(context: BotContext, from: CallSource = "chts_list", allUnread?: boolean) {
 		if (!context.from) {
 			return
 		}
+
 		var folder: number | undefined
+		var allUnread = allUnread
 
 		if (context.callbackQuery?.data) {
 			const callbackQuery = CoreUtils.callbackQueryToUrl(context.callbackQuery.data)
 
 			if (callbackQuery.searchParams.get("fd")) {
 				folder = Number(callbackQuery.searchParams.get("fd"))
+			}
+
+			if (callbackQuery.searchParams.get("a_urnd")) {
+				allUnread = Boolean(callbackQuery.searchParams.get("a_urnd"))
 			}
 		}
 
@@ -159,7 +148,7 @@ export class CommandHandler {
 				if (pages.length > 0) {
 					for (const chat of pages[page]) {
 						if (chat.title) {
-							buttons.push([[chat.title, CallbackQuery.GiveAuthCreds(from).query]])
+							buttons.push([[chat.title, CallbackQuery.ReadUnreadChatMessages(from, Number(chat.id)).query]])
 						}
 					}
 				}
@@ -168,13 +157,13 @@ export class CommandHandler {
 					const arrows: Array<[string, string]> = []
 
 					if (page > 0) {
-						arrows.push(["◀️", CallbackQuery.ListOfChats(from, page - 1, folder, foldersPage).query])
+						arrows.push(["◀️", CallbackQuery.ListOfChats(from, allUnread, page - 1, folder, foldersPage).query])
 					}
 
 					arrows.push([`${page + 1} / ${pages.length}`, CallbackQuery.DoNothing(from).query])
 
 					if (page < pages.length - 1) {
-						arrows.push(["▶️", CallbackQuery.ListOfChats(from, page + 1, folder, foldersPage).query])
+						arrows.push(["▶️", CallbackQuery.ListOfChats(from, allUnread, page + 1, folder, foldersPage).query])
 					}
 
 					buttons.push(arrows)
@@ -185,8 +174,6 @@ export class CommandHandler {
 						[Localized.back_action(context.from?.id), CallbackQuery.ListOfFolders(from, foldersPage).query]
 					])
 				}
-
-				console.log("[FOLDER PAGE]: ", foldersPage, buttons)
 
 				if (context.callbackQuery?.data) {
 					context
@@ -202,26 +189,74 @@ export class CommandHandler {
 						.catch((error) => CoreErrorHandler.handle(error))
 				}
 			})
+			.catch(async (error) => CoreErrorHandler.handle(error))
+	}
+
+	async handleReadUnreadChatMessages(context: BotContext) {
+		if (!context.from) {
+			return
+		}
+
+		var chatId: number | undefined
+
+		if (context.callbackQuery?.data) {
+			const callbackQuery = CoreUtils.callbackQueryToUrl(context.callbackQuery.data)
+
+			if (callbackQuery.searchParams.get("cid")) {
+				chatId = Number(callbackQuery.searchParams.get("cid"))
+			}
+		}
+
+		if (!chatId) {
+			return
+		}
+
+		var loadingMessage: Message.TextMessage | undefined
+
+		try {
+			loadingMessage = await context.reply(Localized.loading_message(context.from.id), {
+				disable_notification: true
+			})
+		} catch (error) {
+			if (loadingMessage) {
+				context.api
+					.deleteMessage(loadingMessage.chat.id, loadingMessage.message_id)
+					.catch((error) => CoreErrorHandler.handle(error))
+			}
+
+			CoreErrorHandler.handle(error)
+		}
+
+		await this.telegramService
+			.getUnreadMessages(context, chatId)
+			.then(async (unreadMessages) => {
+				var responseParts = await this.gptService.analize(unreadMessages)
+
+				if (responseParts.length == 1) {
+					responseParts = CoreUtils.splitByDoubleNewline(responseParts[0])
+				}
+
+				await this.deleteLoadingMessage(context, loadingMessage)
+
+				for (const part of responseParts) {
+					// const escapedPart = CoreUtils.escapeTelegramMarkdown(part)
+					CoreLogger.log([{ text: part, fg: "bright_yellow" }])
+
+					await context
+						.reply(part, {
+							parse_mode: "Markdown"
+						})
+						.catch(async (error) => {
+							CoreErrorHandler.handle(error)
+
+							await this.deleteLoadingMessage(context, loadingMessage)
+						})
+				}
+			})
 			.catch(async (error) => {
 				CoreErrorHandler.handle(error)
 
-				if (!context.from) {
-					return
-				}
-
-				if (error instanceof TelegramServiceError) {
-					await context
-						.reply(Localized.unauthorized_message("", context.from.id), {
-							parse_mode: "Markdown",
-							reply_markup: InlineKeyboardBuilder.makeKeyboard([
-								[
-									Localized.how_to_grant_access_message_action(context.from?.id),
-									CallbackQuery.HowToGrantAccess(from).query
-								]
-							])
-						})
-						.catch((error) => CoreErrorHandler.handle(error))
-				}
+				await this.deleteLoadingMessage(context, loadingMessage)
 			})
 	}
 
@@ -233,7 +268,7 @@ export class CommandHandler {
 		await context.reply(Localized.how_to_grant_access_message(context.from.id), {
 			parse_mode: "MarkdownV2",
 			reply_markup: InlineKeyboardBuilder.makeKeyboard([
-				[Localized.give_ids(context.from?.id), CallbackQuery.GiveAppCreds("how_to_grant_access").query]
+				[Localized.give_ids(context.from?.id), CallbackQuery.GiveAppCreds("h_t_gr_acc").query]
 			])
 		})
 	}
@@ -258,6 +293,16 @@ export class CommandHandler {
 				user.language_code ?? "ru",
 				process.env.PROJECT_NAME
 			)
+			.catch((error) => CoreErrorHandler.handle(error))
+	}
+
+	private async deleteLoadingMessage(context: BotContext, message: Message.TextMessage | undefined) {
+		if (!message) {
+			return
+		}
+
+		await context.api
+			.deleteMessage(message.chat.id, message.message_id)
 			.catch((error) => CoreErrorHandler.handle(error))
 	}
 }

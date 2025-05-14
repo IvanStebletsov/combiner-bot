@@ -12,6 +12,7 @@ import { InlineKeyboardBuilder } from "../../Helpers/InlineKeyboardBuilder"
 import { CallbackQuery } from "../../Handlers/CallbackHandler/CallbackQuery"
 import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
 import { TelegramFolder } from "../../Types/TelegramFolder"
+import { Message } from "../../Models/Message"
 
 export class TelegramService {
 	private CURRENT_VERSION = "1"
@@ -74,8 +75,12 @@ export class TelegramService {
 			return Promise.reject(error)
 		})
 
-		await client.connect()
+		if (!client.connected) {
+			await client.connect()
+		}
+
 		const isAuthorized = await client.checkAuthorization()
+		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
 
 		if (isAuthorized) {
 			const dialogFilters = await client.invoke(new Api.messages.GetDialogFilters())
@@ -98,7 +103,10 @@ export class TelegramService {
 			return Promise.reject(error)
 		})
 
-		await client.connect()
+		if (!client.connected) {
+			await client.connect()
+		}
+
 		const isAuthorized = await client.checkAuthorization()
 
 		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
@@ -137,56 +145,81 @@ export class TelegramService {
 				}
 
 				CoreLogger.log([{ text: `[DIALOG]: ${dialog.title} - ${dialog.unreadCount} (${id})`, fg: "green" }])
-
-				// 	var counter = chat.unreadCount
-				// 	var unreadMessages: Array<Message> = []
-
-				// 	for await (const message of this.client.iterMessages(chat.entity)) {
-				// 		if (!message.text) {
-				// 			continue
-				// 		}
-
-				// 		if (counter < 1) {
-				// 			break
-				// 		}
-
-				// 		var username = ""
-
-				// 		if (message.fromId) {
-				// 			const entity = await this.client.getEntity(message.fromId)
-				// 			const firstName = entity["firstName"]
-				// 			const lastName = entity["lastName"]
-				// 			const nickName = entity["username"]
-
-				// 			if (firstName) {
-				// 				username += firstName
-				// 			}
-
-				// 			if (lastName) {
-				// 				username += ` ${lastName}`
-				// 			}
-
-				// 			if (nickName) {
-				// 				username += ` (@${nickName})`
-				// 			}
-				// 		}
-
-				// 		// console.log(JSON.stringify(message, null, 4))
-				// 		const date = new Date(message.date * 1000)
-				// 		const unreadMessage = new Message(username, message.date, date, message.text)
-				// 		unreadMessages.push(unreadMessage)
-
-				// 		// CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null, 4)}`, fg: "green" }])
-
-				// 		// await context.reply(`👤 ${username}\n\n✉️ ${message.text}`)
-				// 		counter -= 1
-				// 	}
-
-				// 	CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null)}`, fg: "green" }])
-				// }
 			}
 
 			return Promise.resolve(unreadChats)
+		} else {
+			return await this.handleUnauthorizedUser(context)
+		}
+	}
+
+	async getUnreadMessages(context: BotContext, chatId: number): Promise<string> {
+		if (!context.from) {
+			return Promise.reject(new TelegramServiceError("no_user_id"))
+		}
+
+		const client = await this.getClient(context.from.id).catch((error) => {
+			return Promise.reject(error)
+		})
+
+		if (!client.connected) {
+			await client.connect()
+		}
+
+		const isAuthorized = await client.checkAuthorization()
+		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
+
+		if (isAuthorized) {
+			const chats = await client.getDialogs()
+			const chat = chats.find((chat) => Number(chat.id) == chatId)
+
+			if (!chat) {
+				return Promise.reject(new TelegramServiceError("no_chat_with_id"))
+			}
+
+			var unreadMessages: Array<Message> = []
+
+			const messages = await client.getMessages(chat.entity, { limit: Math.min(400, chat.unreadCount) })
+
+			for await (const message of messages) {
+				if (!message.text) {
+					continue
+				}
+
+				var username = ""
+
+				if (message.fromId) {
+					const entity = await client.getEntity(message.fromId)
+					const firstName = entity["firstName"]
+					const lastName = entity["lastName"]
+					const nickName = entity["username"]
+
+					if (firstName) {
+						username += firstName
+					}
+
+					if (lastName) {
+						username += ` ${lastName}`
+					}
+
+					if (nickName) {
+						username += ` (@${nickName})`
+					}
+				}
+
+				const date = new Date(message.date * 1000)
+				const unreadMessage = new Message(username, message.date, date, message.text)
+				unreadMessages.push(unreadMessage)
+
+				CoreLogger.log([{ text: `[COUNTER]: ${unreadMessages.length}`, fg: "bright_yellow" }])
+			}
+
+			unreadMessages = unreadMessages.sort((lhs, rhs) => rhs.date.getTime() - lhs.date.getTime())
+			const jsonUnreadMessages = JSON.stringify(unreadMessages)
+
+			CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null, 4)}`, fg: "green" }])
+
+			return Promise.resolve(jsonUnreadMessages)
 		} else {
 			return await this.handleUnauthorizedUser(context)
 		}
@@ -199,24 +232,16 @@ export class TelegramService {
 
 		const apiId = await this.usersService.apiId(context.from.id)
 		const apiHash = await this.usersService.apiHash(context.from.id)
-		const details = apiId && apiHash ? "" : Localized.unauthorized_message_details(context.from.id)
+		const details = apiId || apiHash ? Localized.unauthorized_message_details(context.from.id) : ""
 		const buttons: Array<Array<[string, string]>> = []
 
 		if (apiId || apiHash) {
 			buttons.push([
-				[
-					Localized.unauthorized_positive_action(context.from?.id),
-					CallbackQuery.GiveAuthCreds("how_to_grant_access").query
-				],
-				[
-					Localized.unauthorized_negative_action(context.from?.id),
-					CallbackQuery.GiveAppCreds("how_to_grant_access").query
-				]
+				[Localized.unauthorized_positive_action(context.from?.id), CallbackQuery.GiveAuthCreds("h_t_gr_acc").query],
+				[Localized.unauthorized_negative_action(context.from?.id), CallbackQuery.GiveAppCreds("h_t_gr_acc").query]
 			])
 		} else {
-			buttons.push([
-				[Localized.authorize_action(context.from?.id), CallbackQuery.Authorize("how_to_grant_access").query]
-			])
+			buttons.push([[Localized.authorize_action(context.from?.id), CallbackQuery.Authorize("h_t_gr_acc").query]])
 		}
 
 		await context

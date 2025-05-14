@@ -54,6 +54,9 @@ class App {
 		this.bot.callbackQuery(CallbackQuery.ListOfChats().regex, (context) =>
 			this.commandHandler.handleListOfChats(context)
 		)
+		this.bot.callbackQuery(CallbackQuery.ReadUnreadChatMessages().regex, (context) =>
+			this.commandHandler.handleReadUnreadChatMessages(context)
+		)
 
 		// Messages
 		this.bot.on("message", (context) => this.messageHandler.handleMessage(context))
