@@ -3,6 +3,7 @@ import { CoreErrorHandler } from "../../Helpers/CoreErrorHandler"
 import { Localized } from "../../Resources/Localizations/Localized"
 import { CallbackHandler } from "../CallbackHandler/CallbackHandler"
 import { BotContext } from "../../Types/BotContext"
+import { CoreUtils } from "../../Helpers/CoreUtils"
 
 /**
  * Handler for messages to bot
@@ -29,6 +30,9 @@ export class MessageHandler {
 			context.message?.video ||
 			context.message?.contact
 		) {
+			if (context.message?.sticker) {
+				console.log(JSON.stringify(context.message.sticker, null, 4))
+			}
 			if (context.message.chat.type == "private") {
 				return this.handleUnsupportedMessage(context)
 			}
@@ -51,18 +55,27 @@ export class MessageHandler {
 				session.authStep = undefined
 				break
 			case "phone":
+				context.session.messageForDeletion.push(context.message.message_id)
+				await CoreUtils.deleteMessagesForDeletion(context)
+
 				if (session.resolvePhone) {
 					session.resolvePhone(text) // Передаем номер
 					session.authStep = undefined
 				}
 				break
 			case "code":
+				context.session.messageForDeletion.push(context.message.message_id)
+				await CoreUtils.deleteMessagesForDeletion(context)
+
 				if (session.resolveCode) {
 					session.resolveCode(text) // Передаем код
 					session.authStep = undefined
 				}
 				break
 			case "password":
+				context.session.messageForDeletion.push(context.message.message_id)
+				await CoreUtils.deleteMessagesForDeletion(context)
+
 				if (session.resolvePassword) {
 					session.resolvePassword(text) // Передаем пароль
 					session.authStep = undefined

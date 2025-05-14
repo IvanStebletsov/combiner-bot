@@ -21,7 +21,7 @@ class App {
 	private messageHandler = Assembly.shared.messageHandler
 
 	async main() {
-		this.bot.use(session({ initial: (): BotSessionData => ({}) }))
+		this.bot.use(session({ initial: (): BotSessionData => ({ messageForDeletion: [] }) }))
 
 		// Middleware
 		this.bot.use(generateUpdateMiddleware())
@@ -29,12 +29,30 @@ class App {
 		this.bot.use((context, next) => this.cacheMiddleware.handleCache(context, next))
 
 		// Commands
-		this.bot.command(Command.Start, (context) => this.commandHandler.handleStart(context))
-		this.bot.command(Command.ListOfFolders, (context) => this.commandHandler.handleListOfFolders(context))
-		this.bot.command(Command.ListOfAllUnreadedChats, (context) =>
+		this.bot.command(Command.Start, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
+			this.commandHandler.handleStart(context)
+		})
+		this.bot.command(Command.ListOfFolders, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
+			this.commandHandler.handleListOfFolders(context)
+		})
+		this.bot.command(Command.ListOfAllUnreadedChats, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
 			this.commandHandler.handleListOfAllUnreadedChats(context)
-		)
-		this.bot.command(Command.HowToGrantAccess, (context) => this.commandHandler.handleHowToGrantAccess(context))
+		})
+		this.bot.command(Command.HowToGrantAccess, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
+			this.commandHandler.handleHowToGrantAccess(context)
+		})
 
 		// Handle events
 		this.bot.callbackQuery(CallbackQuery.GiveAppCreds().regex, (context) =>
@@ -56,6 +74,9 @@ class App {
 		)
 		this.bot.callbackQuery(CallbackQuery.ReadUnreadChatMessages().regex, (context) =>
 			this.commandHandler.handleReadUnreadChatMessages(context)
+		)
+		this.bot.callbackQuery(CallbackQuery.DeleteMessage().regex, (context) =>
+			this.callbackHandler.handleDeleteMessage(context)
 		)
 
 		// Messages

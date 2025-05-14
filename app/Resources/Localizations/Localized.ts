@@ -67,8 +67,8 @@ export class Localized {
     }
 
     /**
-     * - ru: Авторизуйся повторно. Кстати, твои текущие *app_id* и *app_hash* еще актуальны или нужно использовать новые?
-     * - en: Log in again. By the way, your current *app_id* and *app_hash* still relevant or do I need to use new ones?
+     * - ru:  Авторизуйся повторно.Кстати, твои текущие *app_id* и *app_hash* еще актуальны или нужно использовать новые?
+     * - en:  Log in again.By the way, your current *app_id* and *app_hash* still relevant or do I need to use new ones?
      */
     static unauthorized_message_details(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
@@ -76,8 +76,17 @@ export class Localized {
     }
 
     /**
-     * - ru: 👌🏻 Да
-     * - en: 👌🏻 Yes
+     * - ru: ❌ Закрыть
+     * - en: ❌ Close
+     */
+    static close_action(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.close_action[languageCode]
+    }
+
+    /**
+     * - ru: 👌🏻 Актуальны
+     * - en: 👌🏻 Relevant
      */
     static unauthorized_positive_action(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
@@ -85,8 +94,8 @@ export class Localized {
     }
 
     /**
-     * - ru: 🙅🏻‍♂️ Нет
-     * - en: 🙅🏻‍♂️ No
+     * - ru: 🙅🏻‍♂️ Нужно обновить
+     * - en: 🙅🏻‍♂️ Need to update
      */
     static unauthorized_negative_action(userId: number): string {
         const languageCode = this.getLanguageCode(userId)

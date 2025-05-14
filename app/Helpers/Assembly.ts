@@ -27,9 +27,9 @@ export class Assembly {
 	gptService = new GPTService()
 	usersService = new UsersService(this.database)
 	telegramService = new TelegramService(this.usersService, this.state)
-	commandHandler = new CommandHandler(this.usersService, this.telegramService, this.gptService)
 	lastSeenMiddleware = new LastSeenMiddleware(this.usersService)
 	cacheMiddleware = new CacheMiddleware(this.usersService, CoreCache.shared)
 	callbackHandler = new CallbackHandler(this.usersService, this.telegramService)
+	commandHandler = new CommandHandler(this.usersService, this.telegramService, this.callbackHandler, this.gptService)
 	messageHandler = new MessageHandler(this.callbackHandler)
 }

@@ -11,15 +11,23 @@ import { CallSource } from "../../Types/CallSource"
 import { GPTService } from "../../Services/GPTService/GPTService"
 import { CoreLogger } from "../../Helpers/CoreLogger/CoreLogger"
 import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
+import { CallbackHandler } from "../CallbackHandler/CallbackHandler"
 
 export class CommandHandler {
 	private usersService: UsersService
 	private telegramService: TelegramService
+	private callbackHandler: CallbackHandler
 	private gptService: GPTService
 
-	constructor(usersService: UsersService, telegramService: TelegramService, gptService: GPTService) {
+	constructor(
+		usersService: UsersService,
+		telegramService: TelegramService,
+		callbackHandler: CallbackHandler,
+		gptService: GPTService
+	) {
 		this.usersService = usersService
 		this.telegramService = telegramService
+		this.callbackHandler = callbackHandler
 		this.gptService = gptService
 	}
 
@@ -30,11 +38,15 @@ export class CommandHandler {
 
 		this.saveUserIfNeeded(context.from)
 
+		await CoreUtils.deleteMessagesForDeletion(context)
+
 		await CoreUtils.replayWithChunks(Localized.welcome_message_initial(context.from.id), context, undefined, "Markdown")
 	}
 
 	async handleListOfFolders(context: BotContext) {
 		const loadingMessage = await this.sendLoadingMessage(context)
+
+		await CoreUtils.deleteMessagesForDeletion(context)
 
 		await this.telegramService
 			.getFolders(context)
@@ -86,9 +98,33 @@ export class CommandHandler {
 				await this.deleteLoadingMessage(context, loadingMessage)
 
 				if (context.callbackQuery?.data) {
+					if (context.message?.message_id) {
+						buttons.push([
+							[
+								Localized.close_action(context.from.id),
+								CallbackQuery.DeleteMessage("fd_lst", context.message.message_id).query
+							]
+						])
+					}
+
 					context
 						.editMessageText(Localized.list_of_folders_message(context.from.id), {
 							reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
+						})
+						.then(async (message) => {
+							if (!context.from || !context.chat) {
+								return
+							}
+
+							await this.addButtons(
+								context,
+								"fd_lst",
+								context.chat.id,
+								message["message_id"],
+								Localized.list_of_folders_message(context.from.id),
+								undefined,
+								buttons
+							)
 						})
 						.catch((error) => CoreErrorHandler.handle(error))
 				} else {
@@ -96,16 +132,38 @@ export class CommandHandler {
 						.reply(Localized.list_of_folders_message(context.from.id), {
 							reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
 						})
+						.then(async (message) => {
+							if (!context.from || !context.chat) {
+								return
+							}
+
+							await this.addButtons(
+								context,
+								"fd_lst",
+								context.chat.id,
+								message.message_id,
+								Localized.list_of_folders_message(context.from.id),
+								undefined,
+								buttons
+							)
+						})
 						.catch((error) => CoreErrorHandler.handle(error))
 				}
 			})
 			.catch(async (error) => {
 				CoreErrorHandler.handle(error)
 				await this.deleteLoadingMessage(context, loadingMessage)
+
+				if (error instanceof TelegramServiceError) {
+					if (error.code == "no_api_id") {
+						await this.callbackHandler.handleGiveAppCreds(context)
+					}
+				}
 			})
 	}
 
 	async handleListOfAllUnreadedChats(context: BotContext) {
+		await CoreUtils.deleteMessagesForDeletion(context)
 		await this.handleListOfChats(context, "a_unrd_chts_lst", true)
 	}
 
@@ -181,12 +239,6 @@ export class CommandHandler {
 					buttons.push(arrows)
 				}
 
-				if (CoreUtils.isNotEmpty(foldersPage)) {
-					buttons.push([
-						[Localized.back_action(context.from?.id), CallbackQuery.ListOfFolders(from, foldersPage).query]
-					])
-				}
-
 				await this.deleteLoadingMessage(context, loadingMessage)
 
 				if (context.callbackQuery?.data) {
@@ -194,11 +246,41 @@ export class CommandHandler {
 						.editMessageText(Localized.list_of_chats_message(context.from.id), {
 							reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
 						})
+						.then(async (message) => {
+							if (!context.from || !context.chat) {
+								return
+							}
+
+							await this.addButtons(
+								context,
+								from,
+								context.chat.id,
+								message["message_id"],
+								Localized.list_of_chats_message(context.from.id),
+								foldersPage,
+								buttons
+							)
+						})
 						.catch((error) => CoreErrorHandler.handle(error))
 				} else {
 					context
 						.reply(Localized.list_of_chats_message(context.from.id), {
 							reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
+						})
+						.then(async (message) => {
+							if (!context.from || !context.chat) {
+								return
+							}
+
+							await this.addButtons(
+								context,
+								from,
+								context.chat.id,
+								message.message_id,
+								Localized.list_of_chats_message(context.from.id),
+								foldersPage,
+								buttons
+							)
 						})
 						.catch((error) => CoreErrorHandler.handle(error))
 				}
@@ -259,8 +341,6 @@ export class CommandHandler {
 				await this.deleteLoadingMessage(context, loadingMessage)
 
 				for (const part of responseParts) {
-					CoreLogger.log([{ text: part, fg: "bright_yellow" }])
-
 					await context
 						.reply(part, {
 							parse_mode: "HTML"
@@ -280,12 +360,44 @@ export class CommandHandler {
 			return
 		}
 
+		await CoreUtils.deleteMessagesForDeletion(context)
+
 		await context.reply(Localized.how_to_grant_access_message(context.from.id), {
 			parse_mode: "MarkdownV2",
 			reply_markup: InlineKeyboardBuilder.makeKeyboard([
 				[Localized.give_ids(context.from?.id), CallbackQuery.GiveAppCreds("h_t_gr_acc").query]
 			])
 		})
+	}
+
+	private async addButtons(
+		context: BotContext,
+		from: CallSource,
+		chatId: number,
+		messageId: number,
+		text: string,
+		foldersPage: number | undefined,
+		buttons: Array<Array<[string, string]>>
+	) {
+		if (!context.from) {
+			return
+		}
+
+		const closeButtons: Array<[string, string]> = []
+
+		if (CoreUtils.isNotEmpty(foldersPage)) {
+			closeButtons.push([Localized.back_action(context.from?.id), CallbackQuery.ListOfFolders(from, foldersPage).query])
+		}
+
+		closeButtons.push([Localized.close_action(context.from.id), CallbackQuery.DeleteMessage("fd_lst", messageId).query])
+
+		buttons.push(closeButtons)
+
+		await context.api
+			.editMessageText(chatId, messageId, text, {
+				reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
+			})
+			.catch((error) => CoreErrorHandler.handle(error))
 	}
 
 	private async sendLoadingMessage(context: BotContext): Promise<Message.TextMessage> {

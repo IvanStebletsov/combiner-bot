@@ -28,16 +28,20 @@
 		"en": "🔒 You are not logged in.{0}"
 	},
 	"unauthorized_message_details": {
-		"ru": "\n\nАвторизуйся повторно. Кстати, твои текущие *app_id* и *app_hash* еще актуальны или нужно использовать новые?",
-		"en": "\n\nLog in again. By the way, your current *app_id* and *app_hash* still relevant or do I need to use new ones?"
+		"ru": " Авторизуйся повторно.\n\nКстати, твои текущие *app_id* и *app_hash* еще актуальны или нужно использовать новые?",
+		"en": " Log in again.\n\nBy the way, your current *app_id* and *app_hash* still relevant or do I need to use new ones?"
+	},
+	"close_action": {
+		"ru": "❌ Закрыть",
+		"en": "❌ Close"
 	},
 	"unauthorized_positive_action": {
-		"ru": "👌🏻 Да",
-		"en": "👌🏻 Yes"
+		"ru": "👌🏻 Актуальны",
+		"en": "👌🏻 Relevant"
 	},
 	"unauthorized_negative_action": {
-		"ru": "🙅🏻‍♂️ Нет",
-		"en": "🙅🏻‍♂️ No"
+		"ru": "🙅🏻‍♂️ Нужно обновить",
+		"en": "🙅🏻‍♂️ Need to update"
 	},
 	"no_unread_messages": {
 		"ru": "😌 В этом чате нет нерпочитанных сообщений, можешь расслабиться.",

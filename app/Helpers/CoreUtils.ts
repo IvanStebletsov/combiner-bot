@@ -299,6 +299,15 @@ export class CoreUtils {
 		return markdown.trim() || "ㅤ"
 	}
 
+	static async deleteMessagesForDeletion(context: BotContext) {
+		context.session.messageForDeletion.forEach(async (messageId) => {
+			if (context.chat) {
+				await context.api.deleteMessage(context.chat.id, messageId).catch((error) => CoreErrorHandler.handle(error))
+			}
+		})
+		context.session.messageForDeletion = []
+	}
+
 	/**
 	 * Method breaks whole message onto bunches
 	 * @param message

@@ -221,7 +221,6 @@ export class UsersService {
 		return this.database
 			.query(query)
 			.then((session) => {
-				console.log("session", session.rows)
 				if ((0 in session.rows, session.rows[0]["session"])) {
 					return Promise.resolve(session.rows[0]["session"])
 				} else {

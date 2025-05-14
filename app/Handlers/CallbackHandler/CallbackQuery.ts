@@ -52,6 +52,13 @@ export class CallbackQuery {
 		})
 	}
 
+	static DeleteMessage(from?: CallSource, messageId?: number): { query: string; regex: RegExp } {
+		return this.makeQuery("dlt_msg", {
+			from: from,
+			mid: messageId
+		})
+	}
+
 	static DoNothing(from?: CallSource): { query: string; regex: RegExp } {
 		return this.makeQuery("do_nthg", { from: from })
 	}

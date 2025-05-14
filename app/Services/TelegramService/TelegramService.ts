@@ -1,4 +1,3 @@
-import { Bot } from "grammy"
 import { Api, TelegramClient } from "telegram"
 import { Session, StringSession } from "telegram/sessions"
 import { State } from "../../Helpers/State"
@@ -130,7 +129,6 @@ export class TelegramService {
 			if (folderId) {
 				const folder = folders.find((item) => item.id == folderId)
 
-				console.log("includeGroups", folder?.includeGroups)
 				if (folder && folder.includeGroups) {
 					chatIds = chats
 						.filter((chat) => chat.isChannel || chat.isGroup)
@@ -154,7 +152,6 @@ export class TelegramService {
 				})
 
 			for (const dialog of unreadChats) {
-				// if (chat) {
 				var id: number | undefined
 
 				if (dialog.inputEntity instanceof Api.InputPeerChannel) {
@@ -190,6 +187,8 @@ export class TelegramService {
 
 		if (isAuthorized) {
 			const chats = await client.getDialogs()
+			const exactChat = await client.getEntity(chatId)
+			console.log("CHAT:", JSON.stringify(exactChat, null, 2))
 			const chat = chats.find((chat) => Number(chat.id) == chatId)
 
 			if (!chat) {
@@ -252,8 +251,6 @@ export class TelegramService {
 				const date = new Date(message.date * 1000)
 				const unreadMessage = new Message(username, message.date, date, message.text)
 				unreadMessages.push(unreadMessage)
-
-				CoreLogger.log([{ text: `[COUNTER]: ${unreadMessages.length}`, fg: "bright_yellow" }])
 			}
 
 			unreadMessages = unreadMessages.sort((lhs, rhs) => rhs.date.getTime() - lhs.date.getTime())
@@ -267,7 +264,7 @@ export class TelegramService {
 		}
 	}
 
-	private async handleUnauthorizedUser(context: BotContext) {
+	async handleUnauthorizedUser(context: BotContext) {
 		if (!context.from) {
 			return Promise.reject(new TelegramServiceError("no_user_id"))
 		}
@@ -291,6 +288,9 @@ export class TelegramService {
 				parse_mode: "Markdown",
 				reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
 			})
+			.then((message) => {
+				context.session.messageForDeletion.push(message.message_id)
+			})
 			.catch((error) => CoreErrorHandler.handle(error))
 
 		return Promise.reject(new TelegramServiceError("user_not_authorized"))
@@ -308,6 +308,9 @@ export class TelegramService {
 				.reply(Localized.phone_number_request_message(context.from.id), {
 					parse_mode: "Markdown"
 				})
+				.then((message) => {
+					context.session.messageForDeletion.push(message.message_id)
+				})
 				.catch((error) => CoreErrorHandler.handle(error))
 		})
 	}
@@ -324,6 +327,9 @@ export class TelegramService {
 				.reply(Localized.auth_code_request_message(context.from.id), {
 					parse_mode: "Markdown"
 				})
+				.then((message) => {
+					context.session.messageForDeletion.push(message.message_id)
+				})
 				.catch((error) => CoreErrorHandler.handle(error))
 		})
 	}
@@ -339,6 +345,9 @@ export class TelegramService {
 			context
 				.reply(Localized.two_fa_password_request_message(context.from.id), {
 					parse_mode: "Markdown"
+				})
+				.then((message) => {
+					context.session.messageForDeletion.push(message.message_id)
 				})
 				.catch((error) => CoreErrorHandler.handle(error))
 		})
@@ -366,11 +375,7 @@ export class TelegramService {
 		}
 
 		const encodedSession = this.CURRENT_VERSION + (await this.usersService.session(userId))
-
-		console.log(encodedSession)
-
 		const session = new StringSession(encodedSession)
-
 		const client = new TelegramClient(session ?? `${userId}`, apiId!, apiHash!, { connectionRetries: 5 })
 
 		this.state.setTelegramClient(userId, client)
