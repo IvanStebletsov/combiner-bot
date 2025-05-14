@@ -121,6 +121,15 @@ export class Localized {
     }
 
     /**
+     * - ru: 🎉 Готово! Доступ получен!
+     * - en: 👌🏻 Ready! Access has been granted!
+     */
+    static authorization_complete_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.authorization_complete_message[languageCode]
+    }
+
+    /**
      * - ru: 👌🏻 Авторизоваться
      * - en: 👌🏻 Authorize
      */

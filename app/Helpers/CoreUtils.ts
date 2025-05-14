@@ -308,6 +308,10 @@ export class CoreUtils {
 		context.session.messageForDeletion = []
 	}
 
+	static sleep(ms: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, ms))
+	}
+
 	/**
 	 * Method breaks whole message onto bunches
 	 * @param message

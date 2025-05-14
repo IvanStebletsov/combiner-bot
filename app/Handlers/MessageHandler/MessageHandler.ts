@@ -56,29 +56,74 @@ export class MessageHandler {
 				break
 			case "phone":
 				context.session.messageForDeletion.push(context.message.message_id)
-				await CoreUtils.deleteMessagesForDeletion(context)
 
-				if (session.resolvePhone) {
-					session.resolvePhone(text) // Передаем номер
-					session.authStep = undefined
+				if (context.chat) {
+					await context.api
+						.sendSticker(context.chat?.id, "CAACAgIAAxkBAAIEaWgk5w0dxpHW_Y3o3YChLV0rCuU2AAJJAgACVp29CiqXDJ0IUyEONgQ")
+						.then(async (message) => {
+							if (!context.from || !context.message?.text) {
+								return
+							}
+
+							context.session.messageForDeletion.push(message.message_id)
+
+							await CoreUtils.sleep(2000)
+
+							await CoreUtils.deleteMessagesForDeletion(context)
+
+							if (session.resolvePhone) {
+								session.resolvePhone(text) // Передаем номер
+								session.authStep = undefined
+							}
+						})
 				}
 				break
 			case "code":
 				context.session.messageForDeletion.push(context.message.message_id)
-				await CoreUtils.deleteMessagesForDeletion(context)
 
-				if (session.resolveCode) {
-					session.resolveCode(text) // Передаем код
-					session.authStep = undefined
+				if (context.chat) {
+					await context.api
+						.sendSticker(context.chat?.id, "CAACAgIAAxkBAAIEaWgk5w0dxpHW_Y3o3YChLV0rCuU2AAJJAgACVp29CiqXDJ0IUyEONgQ")
+						.then(async (message) => {
+							if (!context.from || !context.message?.text) {
+								return
+							}
+
+							context.session.messageForDeletion.push(message.message_id)
+
+							await CoreUtils.sleep(2000)
+
+							await CoreUtils.deleteMessagesForDeletion(context)
+
+							if (session.resolveCode) {
+								session.resolveCode(text) // Передаем код
+								session.authStep = undefined
+							}
+						})
 				}
 				break
 			case "password":
 				context.session.messageForDeletion.push(context.message.message_id)
-				await CoreUtils.deleteMessagesForDeletion(context)
 
-				if (session.resolvePassword) {
-					session.resolvePassword(text) // Передаем пароль
-					session.authStep = undefined
+				if (context.chat) {
+					await context.api
+						.sendSticker(context.chat?.id, "CAACAgIAAxkBAAIEaWgk5w0dxpHW_Y3o3YChLV0rCuU2AAJJAgACVp29CiqXDJ0IUyEONgQ")
+						.then(async (message) => {
+							if (!context.from || !context.message?.text) {
+								return
+							}
+
+							context.session.messageForDeletion.push(message.message_id)
+
+							await CoreUtils.sleep(2000)
+
+							await CoreUtils.deleteMessagesForDeletion(context)
+
+							if (session.resolvePassword) {
+								session.resolvePassword(text) // Передаем пароль
+								session.authStep = undefined
+							}
+						})
 				}
 				break
 			default:

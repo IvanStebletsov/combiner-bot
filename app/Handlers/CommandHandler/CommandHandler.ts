@@ -40,7 +40,11 @@ export class CommandHandler {
 
 		await CoreUtils.deleteMessagesForDeletion(context)
 
-		await CoreUtils.replayWithChunks(Localized.welcome_message_initial(context.from.id), context, undefined, "Markdown")
+		await context
+			.reply(Localized.welcome_message_initial(context.from.id), {
+				parse_mode: "Markdown"
+			})
+			.catch((error) => CoreErrorHandler.handle(error))
 	}
 
 	async handleListOfFolders(context: BotContext) {

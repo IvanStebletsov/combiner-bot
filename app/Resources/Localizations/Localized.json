@@ -51,6 +51,10 @@
 		"ru": "🤷🏻‍♂️ В этой папке нет чатов.",
 		"en": "🤷🏻‍♂️ There are no chats in this folder."
 	},
+	"authorization_complete_message": {
+		"ru": "🎉 Готово! Доступ получен!",
+		"en": "👌🏻 Ready! Access has been granted!"
+	},
 	"authorize_action": {
 		"ru": "👌🏻 Авторизоваться",
 		"en": "👌🏻 Authorize"
