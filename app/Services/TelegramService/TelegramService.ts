@@ -13,15 +13,14 @@ import { CallbackQuery } from "../../Handlers/CallbackHandler/CallbackQuery"
 import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
 import { TelegramFolder } from "../../Types/TelegramFolder"
 import { Message } from "../../Models/Message"
+import { CoreUtils } from "../../Helpers/CoreUtils"
 
 export class TelegramService {
 	private CURRENT_VERSION = "1"
-	private bot: Bot<BotContext>
 	private usersService: UsersService
 	private state: State
 
-	constructor(bot: Bot<BotContext>, usersService: UsersService, state: State) {
-		this.bot = bot
+	constructor(usersService: UsersService, state: State) {
 		this.usersService = usersService
 		this.state = state
 	}
@@ -94,7 +93,7 @@ export class TelegramService {
 		}
 	}
 
-	async getChats(context: BotContext, allUnread?: boolean, folder?: number): Promise<Dialog[]> {
+	async getChats(context: BotContext, allUnread?: boolean, folderId?: number): Promise<Dialog[]> {
 		if (!context.from) {
 			return Promise.reject(new TelegramServiceError("no_user_id"))
 		}
@@ -110,18 +109,38 @@ export class TelegramService {
 		const isAuthorized = await client.checkAuthorization()
 
 		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
-		CoreLogger.log([{ text: `[FOLDER]: ${folder}`, fg: "green" }])
+		CoreLogger.log([{ text: `[FOLDER ID]: ${folderId}`, fg: "green" }])
 
 		if (isAuthorized) {
 			var chatIds: number[] = []
 
-			if (folder) {
-				const folders = await this.getFolders(context)
-				const folderIndex = folders.findIndex((item) => item.id == folder)
-				chatIds = folders[folderIndex].chats.map((chat) => chat.chatId ?? chat.userId ?? chat.channelId)
+			const folders = await this.getFolders(context)
+
+			if (folderId) {
+				const folder = folders.find((item) => item.id == folderId)
+				chatIds = folder?.chats.map((chat) => chat.chatId ?? chat.userId ?? chat.channelId) ?? []
+
+				if (folder?.includeGroups == false && chatIds.length == 0) {
+					return Promise.reject(new TelegramServiceError("no_chats_in_folder"))
+				}
 			}
 
 			const chats = await client.getDialogs()
+
+			if (folderId) {
+				const folder = folders.find((item) => item.id == folderId)
+
+				console.log("includeGroups", folder?.includeGroups)
+				if (folder && folder.includeGroups) {
+					chatIds = chats
+						.filter((chat) => chat.isChannel || chat.isGroup)
+						.map((chat) => Number(`${chat.id}`.replace("-100", "")))
+				}
+
+				if (chatIds.length == 0) {
+					return Promise.reject(new TelegramServiceError("no_chats_in_folder"))
+				}
+			}
 
 			const unreadChats = chats
 				.filter((chat) => (allUnread == true ? chat.unreadCount > 0 : true))
@@ -179,7 +198,18 @@ export class TelegramService {
 
 			var unreadMessages: Array<Message> = []
 
-			const messages = await client.getMessages(chat.entity, { limit: Math.min(400, chat.unreadCount) })
+			const unreadMessagesCount = chat.unreadCount > 0 ? Math.min(300, chat.unreadCount) : undefined
+
+			CoreLogger.log([
+				{ text: `[UNREAD MESSAGES]:`, fg: "green" },
+				{ text: ` ${chat.unreadCount} (${unreadMessagesCount})` }
+			])
+
+			if (!unreadMessagesCount) {
+				return Promise.resolve("[]")
+			}
+
+			const messages = await client.getMessages(chat.entity, { limit: unreadMessagesCount })
 
 			for await (const message of messages) {
 				if (!message.text) {
@@ -195,15 +225,27 @@ export class TelegramService {
 					const nickName = entity["username"]
 
 					if (firstName) {
-						username += firstName
+						username += CoreUtils.escape(firstName)
 					}
 
 					if (lastName) {
-						username += ` ${lastName}`
+						username += ` ${CoreUtils.escape(firstName)}`
 					}
 
 					if (nickName) {
-						username += ` (@${nickName})`
+						username += ` (@${CoreUtils.escape(firstName)})`
+					}
+				} else if (message.peerId instanceof Api.PeerChat) {
+					const entity = await client.getEntity(message.peerId.chatId)
+
+					if (entity["title"]) {
+						username += CoreUtils.escape(entity["title"])
+					}
+				} else if (message.peerId instanceof Api.PeerChannel) {
+					const entity = await client.getEntity(message.peerId.channelId)
+
+					if (entity["title"]) {
+						username += CoreUtils.escape(entity["title"])
 					}
 				}
 

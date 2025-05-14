@@ -33,14 +33,14 @@ export class CallbackQuery {
 		from?: CallSource,
 		allUnread?: boolean,
 		page?: number,
-		folder?: number,
+		folderId?: number,
 		foldersPage?: number
 	): { query: string; regex: RegExp } {
 		return this.makeQuery("chts_lst", {
 			from: from,
 			a_urnd: allUnread,
 			pg: page,
-			fd: folder,
+			fd_id: folderId,
 			fd_pg: foldersPage
 		})
 	}

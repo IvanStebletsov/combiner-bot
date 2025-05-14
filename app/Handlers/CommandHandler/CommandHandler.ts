@@ -10,6 +10,7 @@ import { TelegramService } from "../../Services/TelegramService/TelegramService"
 import { CallSource } from "../../Types/CallSource"
 import { GPTService } from "../../Services/GPTService/GPTService"
 import { CoreLogger } from "../../Helpers/CoreLogger/CoreLogger"
+import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
 
 export class CommandHandler {
 	private usersService: UsersService
@@ -33,9 +34,11 @@ export class CommandHandler {
 	}
 
 	async handleListOfFolders(context: BotContext) {
+		const loadingMessage = await this.sendLoadingMessage(context)
+
 		await this.telegramService
 			.getFolders(context)
-			.then((folders) => {
+			.then(async (folders) => {
 				var page = 0
 
 				if (context.callbackQuery?.data) {
@@ -51,9 +54,11 @@ export class CommandHandler {
 				const buttons: Array<Array<[string, string]>> = []
 
 				if (pages.length > 0) {
-					for (const chat of pages[page]) {
-						if (chat.title) {
-							buttons.push([[chat.title, CallbackQuery.ListOfChats("fd_lst", undefined, page, chat.id).query]])
+					for (const folder of pages[page]) {
+						if (folder.title) {
+							buttons.push([
+								[folder.title, CallbackQuery.ListOfChats("fd_lst", undefined, undefined, folder.id, page).query]
+							])
 						}
 					}
 				}
@@ -78,6 +83,8 @@ export class CommandHandler {
 					return
 				}
 
+				await this.deleteLoadingMessage(context, loadingMessage)
+
 				if (context.callbackQuery?.data) {
 					context
 						.editMessageText(Localized.list_of_folders_message(context.from.id), {
@@ -92,7 +99,10 @@ export class CommandHandler {
 						.catch((error) => CoreErrorHandler.handle(error))
 				}
 			})
-			.catch(async (error) => CoreErrorHandler.handle(error))
+			.catch(async (error) => {
+				CoreErrorHandler.handle(error)
+				await this.deleteLoadingMessage(context, loadingMessage)
+			})
 	}
 
 	async handleListOfAllUnreadedChats(context: BotContext) {
@@ -104,14 +114,14 @@ export class CommandHandler {
 			return
 		}
 
-		var folder: number | undefined
+		var folderId: number | undefined
 		var allUnread = allUnread
 
 		if (context.callbackQuery?.data) {
 			const callbackQuery = CoreUtils.callbackQueryToUrl(context.callbackQuery.data)
 
-			if (callbackQuery.searchParams.get("fd")) {
-				folder = Number(callbackQuery.searchParams.get("fd"))
+			if (callbackQuery.searchParams.get("fd_id")) {
+				folderId = Number(callbackQuery.searchParams.get("fd_id"))
 			}
 
 			if (callbackQuery.searchParams.get("a_urnd")) {
@@ -119,9 +129,11 @@ export class CommandHandler {
 			}
 		}
 
+		const loadingMessage = await this.sendLoadingMessage(context)
+
 		await this.telegramService
-			.getChats(context, allUnread, folder)
-			.then((unreadChats) => {
+			.getChats(context, allUnread, folderId)
+			.then(async (unreadChats) => {
 				if (!context.from) {
 					return
 				}
@@ -157,13 +169,13 @@ export class CommandHandler {
 					const arrows: Array<[string, string]> = []
 
 					if (page > 0) {
-						arrows.push(["◀️", CallbackQuery.ListOfChats(from, allUnread, page - 1, folder, foldersPage).query])
+						arrows.push(["◀️", CallbackQuery.ListOfChats(from, allUnread, page - 1, folderId, foldersPage).query])
 					}
 
 					arrows.push([`${page + 1} / ${pages.length}`, CallbackQuery.DoNothing(from).query])
 
 					if (page < pages.length - 1) {
-						arrows.push(["▶️", CallbackQuery.ListOfChats(from, allUnread, page + 1, folder, foldersPage).query])
+						arrows.push(["▶️", CallbackQuery.ListOfChats(from, allUnread, page + 1, folderId, foldersPage).query])
 					}
 
 					buttons.push(arrows)
@@ -174,6 +186,8 @@ export class CommandHandler {
 						[Localized.back_action(context.from?.id), CallbackQuery.ListOfFolders(from, foldersPage).query]
 					])
 				}
+
+				await this.deleteLoadingMessage(context, loadingMessage)
 
 				if (context.callbackQuery?.data) {
 					context
@@ -189,7 +203,15 @@ export class CommandHandler {
 						.catch((error) => CoreErrorHandler.handle(error))
 				}
 			})
-			.catch(async (error) => CoreErrorHandler.handle(error))
+			.catch(async (error) => {
+				CoreErrorHandler.handle(error)
+
+				if ((error instanceof TelegramServiceError && error.code == "no_chats_in_folder", context.from)) {
+					context.reply(Localized.no_chats(context.from.id)).catch((error) => CoreErrorHandler.handle(error))
+				}
+
+				await this.deleteLoadingMessage(context, loadingMessage)
+			})
 	}
 
 	async handleReadUnreadChatMessages(context: BotContext) {
@@ -211,25 +233,23 @@ export class CommandHandler {
 			return
 		}
 
-		var loadingMessage: Message.TextMessage | undefined
-
-		try {
-			loadingMessage = await context.reply(Localized.loading_message(context.from.id), {
-				disable_notification: true
-			})
-		} catch (error) {
-			if (loadingMessage) {
-				context.api
-					.deleteMessage(loadingMessage.chat.id, loadingMessage.message_id)
-					.catch((error) => CoreErrorHandler.handle(error))
-			}
-
-			CoreErrorHandler.handle(error)
-		}
+		const loadingMessage = await this.sendLoadingMessage(context)
 
 		await this.telegramService
 			.getUnreadMessages(context, chatId)
 			.then(async (unreadMessages) => {
+				if (unreadMessages == "[]" && context.from) {
+					await context
+						.reply(Localized.no_unread_messages(context.from.id), {
+							parse_mode: "HTML"
+						})
+						.catch(async (error) => {
+							CoreErrorHandler.handle(error)
+
+							await this.deleteLoadingMessage(context, loadingMessage)
+						})
+				}
+
 				var responseParts = await this.gptService.analize(unreadMessages)
 
 				if (responseParts.length == 1) {
@@ -239,18 +259,13 @@ export class CommandHandler {
 				await this.deleteLoadingMessage(context, loadingMessage)
 
 				for (const part of responseParts) {
-					// const escapedPart = CoreUtils.escapeTelegramMarkdown(part)
 					CoreLogger.log([{ text: part, fg: "bright_yellow" }])
 
 					await context
 						.reply(part, {
-							parse_mode: "Markdown"
+							parse_mode: "HTML"
 						})
-						.catch(async (error) => {
-							CoreErrorHandler.handle(error)
-
-							await this.deleteLoadingMessage(context, loadingMessage)
-						})
+						.catch(async (error) => CoreErrorHandler.handle(error))
 				}
 			})
 			.catch(async (error) => {
@@ -271,6 +286,32 @@ export class CommandHandler {
 				[Localized.give_ids(context.from?.id), CallbackQuery.GiveAppCreds("h_t_gr_acc").query]
 			])
 		})
+	}
+
+	private async sendLoadingMessage(context: BotContext): Promise<Message.TextMessage> {
+		if (!context.from) {
+			return Promise.reject(new TelegramServiceError("no_user_id"))
+		}
+
+		var loadingMessage: Message.TextMessage | undefined
+
+		try {
+			loadingMessage = await context.reply(Localized.loading_message(context.from.id), {
+				disable_notification: true
+			})
+
+			return Promise.resolve(loadingMessage!)
+		} catch (error) {
+			if (loadingMessage) {
+				await context.api
+					.deleteMessage(loadingMessage.chat.id, loadingMessage.message_id)
+					.catch((error) => CoreErrorHandler.handle(error))
+			}
+
+			CoreErrorHandler.handle(error)
+
+			return Promise.reject(new TelegramServiceError("something_went_wrong"))
+		}
 	}
 
 	private async saveUserIfNeeded(user: User | undefined) {

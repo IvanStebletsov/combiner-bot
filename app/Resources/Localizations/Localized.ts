@@ -94,6 +94,24 @@ export class Localized {
     }
 
     /**
+     * - ru: 😌 В этом чате нет нерпочитанных сообщений, можешь расслабиться.
+     * - en: 😌 There are no unread messages in this chat, you can relax.
+     */
+    static no_unread_messages(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.no_unread_messages[languageCode]
+    }
+
+    /**
+     * - ru: 🤷🏻‍♂️ В этой папке нет чатов.
+     * - en: 🤷🏻‍♂️ There are no chats in this folder.
+     */
+    static no_chats(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.no_chats[languageCode]
+    }
+
+    /**
      * - ru: 👌🏻 Авторизоваться
      * - en: 👌🏻 Authorize
      */

@@ -2,7 +2,9 @@ import { BaseError } from "./BaseError"
 import { ErrorCode } from "./ErrorCode"
 
 export class TelegramServiceError extends BaseError {
-	constructor(code: "no_api_id" | "no_api_hash" | "user_not_authorized" | "no_chat_with_id" | ErrorCode) {
+	constructor(
+		code: "no_api_id" | "no_api_hash" | "user_not_authorized" | "no_chat_with_id" | "no_chats_in_folder" | ErrorCode
+	) {
 		var message = "❌ Something went wrong"
 		var errorCode = TelegramServiceError.makeErrorCode(0)
 
@@ -18,6 +20,10 @@ export class TelegramServiceError extends BaseError {
 			case "user_not_authorized":
 				errorCode = TelegramServiceError.makeErrorCode(2)
 				message = "🙅🏻‍♂️  User is not authorized"
+				break
+			case "no_chats_in_folder":
+				errorCode = TelegramServiceError.makeErrorCode(3)
+				message = "🤷🏻‍♂️  Thera are no chats in this folder"
 				break
 		}
 

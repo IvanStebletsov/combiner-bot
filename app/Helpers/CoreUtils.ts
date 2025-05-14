@@ -250,6 +250,55 @@ export class CoreUtils {
 		return result
 	}
 
+	static convertMarkdownToHtml(markdown: string): string {
+		// Escape html tags
+		markdown = markdown.replace(/[&<>"']/g, (match) => {
+			switch (match) {
+				case "&":
+					return "&amp;"
+				case "<":
+					return "&lt;"
+				case ">":
+					return "&gt;"
+				case '"':
+					return "&quot;"
+				case "'":
+					return "&#39;"
+				default:
+					return match
+			}
+		})
+		// Combine header replacements into one regex
+		markdown = markdown.replace(/^(#{1,6}) (.*)$/gim, (_, __, p2) => {
+			return `<b>${p2}</b>`
+		})
+
+		// Convert code blocks
+		markdown = markdown.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, p1, p2) => {
+			if (p1) {
+				return `<pre language="language-${p1}">${p2}</pre>`
+			}
+			return `<code>${p2}</code>`
+		})
+
+		// Convert inline code
+		markdown = markdown.replace(/`([^`]+)`/g, "<code>$1</code>")
+
+		// Combine bold, italic, underline, and strikethrough replacements into one regex
+		markdown = markdown.replace(/(\*\*|__)(.*?)\1/g, "<b>$2</b>") // Bold
+		markdown = markdown.replace(/(\*|_)(.*?)\1/g, "<em>$2</em>") // Italic
+		markdown = markdown.replace(/~~(.*?)~~/g, "<s>$1</s>") // Strikethrough
+
+		// Convert links
+		markdown = markdown.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+
+		// Convert images
+		markdown = markdown.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<a src="$2">$1</a>')
+
+		// Return empty space if there is no string
+		return markdown.trim() || "ㅤ"
+	}
+
 	/**
 	 * Method breaks whole message onto bunches
 	 * @param message
