@@ -85,30 +85,6 @@ export class CallbackHandler {
 		}
 	}
 
-	async handleAuthorize(context: BotContext) {
-		await this.telegramService
-			.authorize(context)
-			.then((session) => {
-				if (!session) {
-					return
-				}
-
-				context
-					.replyWithSticker("CAACAgIAAxkBAAIFe2glCxRCHeM4iYfjCDTcIrmd4D2HAAL3AANWnb0KC3IkHUj0DTA2BA")
-					.then(() => {
-						if (!context.from) {
-							return
-						}
-
-						context
-							.reply(Localized.authorization_complete_message(context.from.id))
-							.catch((error) => CoreErrorHandler.handle(error))
-					})
-					.catch((error) => CoreErrorHandler.handle(error))
-			})
-			.catch((error) => CoreErrorHandler.handle(error))
-	}
-
 	async handleAppHash(context: BotContext) {
 		if (!context.from || !context.message?.text) {
 			return
@@ -137,6 +113,33 @@ export class CallbackHandler {
 						.catch((error) => CoreErrorHandler.handle(error))
 				})
 		}
+	}
+
+	async handleAuthorize(context: BotContext) {
+		await this.telegramService
+			.authorize(context)
+			.then((session) => {
+				if (!session) {
+					return
+				}
+
+				context
+					.replyWithSticker("CAACAgIAAxkBAAIFe2glCxRCHeM4iYfjCDTcIrmd4D2HAAL3AANWnb0KC3IkHUj0DTA2BA")
+					.then(() => {
+						if (!context.from) {
+							return
+						}
+
+						context
+							.reply(Localized.authorization_complete_message(context.from.id))
+							.catch((error) => CoreErrorHandler.handle(error))
+					})
+					.catch((error) => CoreErrorHandler.handle(error))
+			})
+			.catch(async (error) => {
+				await CoreUtils.deleteMessagesForDeletion(context)
+				CoreErrorHandler.handle(error)
+			})
 	}
 
 	async handleDeleteMessage(context: BotContext) {

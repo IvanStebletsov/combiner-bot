@@ -53,6 +53,12 @@ class App {
 			}
 			this.commandHandler.handleHowToGrantAccess(context)
 		})
+		this.bot.command(Command.Authorize, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
+			this.callbackHandler.handleAuthorize(context)
+		})
 
 		// Handle events
 		this.bot.callbackQuery(CallbackQuery.GiveAppCreds().regex, (context) =>

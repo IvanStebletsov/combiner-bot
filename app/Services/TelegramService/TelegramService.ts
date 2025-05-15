@@ -13,6 +13,7 @@ import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
 import { TelegramFolder } from "../../Types/TelegramFolder"
 import { Message } from "../../Models/Message"
 import { CoreUtils } from "../../Helpers/CoreUtils"
+import { error } from "console"
 
 export class TelegramService {
 	private CURRENT_VERSION = "1"
@@ -374,7 +375,16 @@ export class TelegramService {
 			return Promise.reject(new TelegramServiceError("no_api_hash"))
 		}
 
-		const encodedSession = this.CURRENT_VERSION + (await this.usersService.session(userId))
+		var encodedSession: string | undefined
+		await this.usersService
+			.session(userId)
+			.then((sessionId) => {
+				encodedSession = this.CURRENT_VERSION + sessionId
+			})
+			.catch((error) => {
+				CoreErrorHandler.handle(error)
+			})
+
 		const session = new StringSession(encodedSession)
 		const client = new TelegramClient(session ?? `${userId}`, apiId!, apiHash!, { connectionRetries: 5 })
 

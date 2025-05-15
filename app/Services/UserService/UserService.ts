@@ -5,6 +5,7 @@ import { CoreErrorHandler } from "../../Helpers/CoreErrorHandler"
 import { CoreUtils } from "../../Helpers/CoreUtils"
 import { SettingsQueries } from "../../Database/SQLQueries/SettingsQueries"
 import { CredentialsQueries } from "../../Database/SQLQueries/CredentialsQueries"
+import { UserServiceError } from "../../Types/Errors/UserServiceError"
 
 export class UsersService {
 	database: Pool
@@ -31,8 +32,9 @@ export class UsersService {
 				return Promise.resolve(users.rowCount != 0)
 			})
 			.catch(async (error) => {
-				CoreErrorHandler.handle(error)
-				return Promise.reject(`Checking of the user existence with ID: ${userId} has failed.\n${error}`)
+				const specifiedError = new UserServiceError("checking_user_existance", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
@@ -72,7 +74,9 @@ export class UsersService {
 				}
 			})
 			.catch((error) => {
-				return Promise.reject(`User with ID: ${userId} saving has failed.\n${error}`)
+				const specifiedError = new UserServiceError("saving_user", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
@@ -82,7 +86,7 @@ export class UsersService {
 	 * @param projectName Project name (database preffix)
 	 * @returns A Promise with user's language code or null
 	 */
-	async languageCode(userId: number, projectName: string): Promise<string | undefined> {
+	async languageCode(userId: number, projectName: string): Promise<string> {
 		const query = SettingsQueries.languageCode(userId, projectName)
 		CoreLogger.log([
 			{ text: `[SQL QUERY]:`, fg: "yellow" },
@@ -95,11 +99,13 @@ export class UsersService {
 				if (0 in languageCode.rows) {
 					return Promise.resolve(languageCode.rows[0]["language_code"])
 				} else {
-					return Promise.resolve(undefined)
+					return Promise.reject(undefined)
 				}
 			})
-			.catch(() => {
-				return Promise.resolve(undefined)
+			.catch((error) => {
+				const specifiedError = new UserServiceError("fetching_language_code", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
@@ -127,13 +133,13 @@ export class UsersService {
 				return Promise.resolve(undefined)
 			})
 			.catch((error) => {
-				return Promise.reject(
-					`Language code: '${languageCode}' saving for user with ID: ${userId} has failed.\n${error}`
-				)
+				const specifiedError = new UserServiceError("saving_language_code", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
-	async apiId(userId: number): Promise<number | undefined> {
+	async apiId(userId: number): Promise<number> {
 		const query = CredentialsQueries.apiId(userId)
 		CoreLogger.log([
 			{ text: `[SQL QUERY]:`, fg: "yellow" },
@@ -146,11 +152,13 @@ export class UsersService {
 				if ((0 in apiId.rows, parseInt(apiId.rows[0]["api_id"]))) {
 					return Promise.resolve(parseInt(apiId.rows[0]["api_id"]))
 				} else {
-					return Promise.reject("API ID doens't exist")
+					return Promise.reject(undefined)
 				}
 			})
-			.catch(() => {
-				return Promise.resolve(undefined)
+			.catch((error) => {
+				const specifiedError = new UserServiceError("fetching_api_id", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
@@ -168,11 +176,13 @@ export class UsersService {
 				return Promise.resolve(apiId)
 			})
 			.catch((error) => {
-				return Promise.reject(`API ID: ${apiId} saving for user with ID: ${userId} has failed.\n${error}`)
+				const specifiedError = new UserServiceError("saving_api_id", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
-	async apiHash(userId: number): Promise<string | undefined> {
+	async apiHash(userId: number): Promise<string> {
 		const query = CredentialsQueries.apiHash(userId)
 		CoreLogger.log([
 			{ text: `[SQL QUERY]:`, fg: "yellow" },
@@ -185,15 +195,17 @@ export class UsersService {
 				if ((0 in apiHash.rows, apiHash.rows[0]["api_hash"])) {
 					return Promise.resolve(apiHash.rows[0]["api_hash"])
 				} else {
-					return Promise.reject("API hash doens't exist")
+					return Promise.reject(undefined)
 				}
 			})
-			.catch(() => {
-				return Promise.resolve(undefined)
+			.catch((error) => {
+				const specifiedError = new UserServiceError("fetching_api_hash", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
-	async saveApiHash(userId: number, apiHash: string): Promise<string | undefined> {
+	async saveApiHash(userId: number, apiHash: string): Promise<string> {
 		const query = CredentialsQueries.saveApiHash(userId, apiHash)
 
 		CoreLogger.log([
@@ -207,11 +219,13 @@ export class UsersService {
 				return Promise.resolve(apiHash)
 			})
 			.catch((error) => {
-				return Promise.reject(`API Hash: ${apiHash} saving for user with ID: ${userId} has failed.\n${error}`)
+				const specifiedError = new UserServiceError("saving_api_hash", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
-	async session(userId: number): Promise<string | undefined> {
+	async session(userId: number): Promise<string> {
 		const query = CredentialsQueries.session(userId)
 		CoreLogger.log([
 			{ text: `[SQL QUERY]:`, fg: "yellow" },
@@ -221,18 +235,21 @@ export class UsersService {
 		return this.database
 			.query(query)
 			.then((session) => {
+				console.log(session)
 				if ((0 in session.rows, session.rows[0]["session"])) {
 					return Promise.resolve(session.rows[0]["session"])
 				} else {
-					return Promise.reject("Session doesn't exist")
+					return Promise.reject(undefined)
 				}
 			})
-			.catch(() => {
-				return Promise.resolve(undefined)
+			.catch((error) => {
+				const specifiedError = new UserServiceError("fetching_session", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
-	async saveSession(userId: number, session: string): Promise<string | undefined> {
+	async saveSession(userId: number, session: string): Promise<string> {
 		const query = CredentialsQueries.saveSession(userId, session)
 
 		CoreLogger.log([
@@ -246,7 +263,9 @@ export class UsersService {
 				return Promise.resolve(session)
 			})
 			.catch((error) => {
-				return Promise.reject(`Session: ${session} saving for user with ID: ${userId} has failed.\n${error}`)
+				const specifiedError = new UserServiceError("saving_session", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 
@@ -268,7 +287,9 @@ export class UsersService {
 				return Promise.resolve(undefined)
 			})
 			.catch((error) => {
-				return Promise.reject(`Last seen date updating user with ID: ${userId} has failed.\n${error}`)
+				const specifiedError = new UserServiceError("last_seen_date_update", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
 			})
 	}
 

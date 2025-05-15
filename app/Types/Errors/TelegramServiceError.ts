@@ -14,15 +14,15 @@ export class TelegramServiceError extends BaseError {
 				message = "🪪  There is no API ID"
 				break
 			case "no_api_hash":
-				errorCode = TelegramServiceError.makeErrorCode(1)
+				errorCode = TelegramServiceError.makeErrorCode(2)
 				message = "#️⃣  There is no API Hash"
 				break
 			case "user_not_authorized":
-				errorCode = TelegramServiceError.makeErrorCode(2)
+				errorCode = TelegramServiceError.makeErrorCode(3)
 				message = "🙅🏻‍♂️  User is not authorized"
 				break
 			case "no_chats_in_folder":
-				errorCode = TelegramServiceError.makeErrorCode(3)
+				errorCode = TelegramServiceError.makeErrorCode(4)
 				message = "🤷🏻‍♂️  Thera are no chats in this folder"
 				break
 		}
