@@ -1,5 +1,7 @@
-interface BotSessionData {
-	authStep?: "app_id" | "app_hash" | "phone" | "code" | "password" // Текущий этап
+import { AuthStep } from "./AuthStep"
+
+export interface BotSessionData {
+	authStep?: AuthStep // Текущий этап
 	messageForDeletion: number[]
 	resolvePhone?: (phone: string) => void // Разрешить Promise для номера
 	resolveCode?: (code: string) => void // Разрешить Promise для кода

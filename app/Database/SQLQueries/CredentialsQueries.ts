@@ -73,4 +73,16 @@ export class CredentialsQueries {
 		WHERE user_id = ${userId}
 		`
 	}
+
+	static clearUserIds(userId: number): string {
+		return `
+		UPDATE telegram_client_redentials
+    SET
+      api_id = NULL,
+      api_hash = NULL,
+      session = NULL
+    WHERE
+      user_id = ${userId};
+		`
+	}
 }

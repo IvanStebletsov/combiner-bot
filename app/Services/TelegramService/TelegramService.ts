@@ -14,6 +14,7 @@ import { TelegramFolder } from "../../Types/TelegramFolder"
 import { Message } from "../../Models/Message"
 import { CoreUtils } from "../../Helpers/CoreUtils"
 import { error } from "console"
+import { RPCError } from "telegram/errors/RPCBaseErrors"
 
 export class TelegramService {
 	private CURRENT_VERSION = "1"
@@ -38,7 +39,15 @@ export class TelegramService {
 			phoneNumber: async () => await this.requestPhone(context),
 			password: async () => await this.requestPassword(context),
 			phoneCode: async () => await this.requestCode(context),
-			onError: (error) => CoreErrorHandler.handle(error)
+			onError: (error) => {
+				if (error instanceof RPCError) {
+					console.log(JSON.stringify(error, null, 2))
+					if (error.code == 400) {
+						return Promise.reject(new TelegramServiceError("invalid_api_creds"))
+					}
+				}
+				CoreErrorHandler.handle(error)
+			}
 		})
 
 		const session = client.session
@@ -89,7 +98,8 @@ export class TelegramService {
 
 			return Promise.resolve(folders)
 		} else {
-			return await this.handleUnauthorizedUser(context)
+			await this.handleUnauthorizedUser(context)
+			return Promise.reject(new TelegramServiceError("user_not_authorized"))
 		}
 	}
 
@@ -166,7 +176,8 @@ export class TelegramService {
 
 			return Promise.resolve(unreadChats)
 		} else {
-			return await this.handleUnauthorizedUser(context)
+			await this.handleUnauthorizedUser(context)
+			return Promise.reject(new TelegramServiceError("user_not_authorized"))
 		}
 	}
 
@@ -261,7 +272,8 @@ export class TelegramService {
 
 			return Promise.resolve(jsonUnreadMessages)
 		} else {
-			return await this.handleUnauthorizedUser(context)
+			await this.handleUnauthorizedUser(context)
+			return Promise.reject(new TelegramServiceError("user_not_authorized"))
 		}
 	}
 
@@ -270,18 +282,29 @@ export class TelegramService {
 			return Promise.reject(new TelegramServiceError("no_user_id"))
 		}
 
-		const apiId = await this.usersService.apiId(context.from.id)
-		const apiHash = await this.usersService.apiHash(context.from.id)
+		var apiId: number | undefined
+		var apiHash: string | undefined
+
+		await this.usersService
+			.apiId(context.from.id)
+			.then((id) => (apiId = id))
+			.catch((error) => CoreErrorHandler.handle(error))
+
+		await this.usersService
+			.apiHash(context.from.id)
+			.then((id) => (apiHash = id))
+			.catch((error) => CoreErrorHandler.handle(error))
+
 		const details = apiId || apiHash ? Localized.unauthorized_message_details(context.from.id) : ""
 		const buttons: Array<Array<[string, string]>> = []
 
 		if (apiId || apiHash) {
 			buttons.push([
-				[Localized.unauthorized_positive_action(context.from?.id), CallbackQuery.GiveAuthCreds("h_t_gr_acc").query],
-				[Localized.unauthorized_negative_action(context.from?.id), CallbackQuery.GiveAppCreds("h_t_gr_acc").query]
+				[Localized.unauthorized_positive_action(context.from?.id), CallbackQuery.GiveAuthCreds().query],
+				[Localized.unauthorized_negative_action(context.from?.id), CallbackQuery.GiveAppCreds().query]
 			])
 		} else {
-			buttons.push([[Localized.authorize_action(context.from?.id), CallbackQuery.Authorize("h_t_gr_acc").query]])
+			buttons.push([[Localized.authorize_action(context.from?.id), CallbackQuery.Authorize().query]])
 		}
 
 		await context
@@ -289,12 +312,28 @@ export class TelegramService {
 				parse_mode: "Markdown",
 				reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
 			})
-			.then((message) => {
+			.then(async (message) => {
 				context.session.messageForDeletion.push(message.message_id)
+
+				if (!context.from) {
+					return
+				}
+
+				buttons.push([[Localized.close_action(context.from.id), CallbackQuery.DeleteMessage(message.message_id).query]])
+
+				await context.api
+					.editMessageText(
+						message.chat.id,
+						message.message_id,
+						Localized.unauthorized_message(details, context.from.id),
+						{
+							parse_mode: "Markdown",
+							reply_markup: InlineKeyboardBuilder.makeKeyboard(...buttons)
+						}
+					)
+					.catch((error) => CoreErrorHandler.handle(error))
 			})
 			.catch((error) => CoreErrorHandler.handle(error))
-
-		return Promise.reject(new TelegramServiceError("user_not_authorized"))
 	}
 
 	private async requestPhone(context: BotContext): Promise<string> {
@@ -363,17 +402,9 @@ export class TelegramService {
 			return Promise.reject(error)
 		})
 
-		if (!apiId) {
-			return Promise.reject(new TelegramServiceError("no_api_id"))
-		}
-
 		const apiHash = await this.usersService.apiHash(userId).catch((error) => {
 			return Promise.reject(error)
 		})
-
-		if (!apiHash) {
-			return Promise.reject(new TelegramServiceError("no_api_hash"))
-		}
 
 		var encodedSession: string | undefined
 		await this.usersService
@@ -382,14 +413,17 @@ export class TelegramService {
 				encodedSession = this.CURRENT_VERSION + sessionId
 			})
 			.catch((error) => {
-				CoreErrorHandler.handle(error)
+				return CoreErrorHandler.handle(error)
 			})
 
-		const session = new StringSession(encodedSession)
-		const client = new TelegramClient(session ?? `${userId}`, apiId!, apiHash!, { connectionRetries: 5 })
+		try {
+			const session = new StringSession(encodedSession)
+			const client = new TelegramClient(session ?? `${userId}`, apiId!, apiHash!, { connectionRetries: 5 })
+			this.state.setTelegramClient(userId, client)
 
-		this.state.setTelegramClient(userId, client)
-
-		return Promise.resolve(client)
+			return Promise.resolve(client)
+		} catch (error) {
+			return Promise.reject(new TelegramServiceError("client_creation"))
+		}
 	}
 }

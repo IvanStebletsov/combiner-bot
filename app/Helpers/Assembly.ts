@@ -30,6 +30,12 @@ export class Assembly {
 	lastSeenMiddleware = new LastSeenMiddleware(this.usersService)
 	cacheMiddleware = new CacheMiddleware(this.usersService, CoreCache.shared)
 	callbackHandler = new CallbackHandler(this.usersService, this.telegramService)
-	commandHandler = new CommandHandler(this.usersService, this.telegramService, this.callbackHandler, this.gptService)
+	commandHandler = new CommandHandler(
+		this.usersService,
+		this.telegramService,
+		this.callbackHandler,
+		this.gptService,
+		this.state
+	)
 	messageHandler = new MessageHandler(this.callbackHandler)
 }

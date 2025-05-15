@@ -235,7 +235,6 @@ export class UsersService {
 		return this.database
 			.query(query)
 			.then((session) => {
-				console.log(session)
 				if ((0 in session.rows, session.rows[0]["session"])) {
 					return Promise.resolve(session.rows[0]["session"])
 				} else {
@@ -264,6 +263,21 @@ export class UsersService {
 			})
 			.catch((error) => {
 				const specifiedError = new UserServiceError("saving_session", userId, error)
+				CoreErrorHandler.handle(specifiedError)
+				return Promise.reject(specifiedError)
+			})
+	}
+
+	async clearUserIds(userId: number): Promise<undefined> {
+		const query = CredentialsQueries.clearUserIds(userId)
+
+		return this.database
+			.query(query)
+			.then(() => {
+				return Promise.resolve(undefined)
+			})
+			.catch((error) => {
+				const specifiedError = new UserServiceError("clearing_user_ids", userId, error)
 				CoreErrorHandler.handle(specifiedError)
 				return Promise.reject(specifiedError)
 			})

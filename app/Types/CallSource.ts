@@ -5,3 +5,5 @@ export type CallSource =
 	| "a_unrd_chts_lst" // "list_of_all_unreaded_chats"
 	| "h_t_gr_acc" // "how_to_grant_access"
 	| "rd_unrd_cht_msgs" // "read_unread_chat_messages"
+	| "clr_my_ids" // clear_my_ids
+	| "auth" // authorize

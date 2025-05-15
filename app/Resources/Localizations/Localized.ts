@@ -4,8 +4,8 @@ import * as localized from "./Localized.json"
 
 export class Localized {
     /**
-     * - ru: 👋 *Привет!*Я помогу тебе быть в курсе того, что обсуждается в длинных переписках без долгого вникания в их суть, прочту их за тебя, кратко перескажу содержание и выделю то, что может быть важным.Для работы мне будет необходим доступ к твоему Telegram аккаунту, это не совсем безопасно, поэтому если сомневаешься стоит ли мной пользоваться, то лучше не пользуйся, иначе мне придтся хранить некоторые твои идентификаторы в базе данных в незашифрованном виде, а именно *api_id*, *api_hash* и *session_id*.Если ты твердо и четко решил, что готов предоставить мне доступ, то вызови команду /how\_to\_grant\_access и следуй инструкции.❗ У тебя всегда есть опции сбросить свои идентификаторы в консоли Telegram, разлогинить меня из своего аккаунта через клиент Telegram, а также попросить меня удалить твои идентификаторы из моей базы.
-     * - en: 👋 *Hi!* I will help you download from Instagram and TikTok:– Photos 📸– Videos 📹– Stories 🎭– Music 🎧Send me links to posts from the application, and I will try to download them and send them to you so that you can keep them and share them with friends in messengers.❗️P.S.: Keep in mind that posts should come from *open accounts*.
+     * - ru: 👋 *Привет!*Я помогу тебе быть в курсе того, что обсуждается в длинных переписках без долгого вникания в их суть, прочту их за тебя, кратко перескажу содержание и выделю то, что может быть важным.Для работы мне будет необходим доступ к твоему Telegram аккаунту, это не совсем безопасно, поэтому если сомневаешься стоит ли мной пользоваться, то лучше не пользуйся, иначе мне придётся хранить некоторые твои идентификаторы в базе данных в незашифрованном виде, а именно *api_id*, *api_hash* и *session_id*.Если ты твердо и четко решил, что готов предоставить мне доступ, то вызови команду /how\_to\_grant\_access и следуй инструкции.❗ У тебя всегда есть опции сбросить свои идентификаторы в консоли Telegram, разлогинить меня из своего аккаунта через клиент Telegram, а также попросить меня удалить твои идентификаторы из моей базы с помощью команды /clear\_my\_ids.
+     * - en: 👋 *Hi!*I will help you keep abreast of what is discussed in long correspondence without delving into their essence for a long time, I will read them for you, briefly summarize the content and highlight what may be important.For work, I will need access to your Telegram account, it's not completely secure, so if you doubt whether you should use me, then don't do it, otherwise I will have to store some of your identifiers in the database in unencrypted form, namely *api_id*, *api_hash* and *session_id*.If you have firmly and clearly decided that you are ready to grant me access, then call the /how\_to\_grant\_access command and follow the instructions.❗ You always have the options to reset your IDs in the Telegram console, log me out of your account via the Telegram client, and also ask me to delete your IDs from my database using the /clear\_my\_ids command.
      */
     static welcome_message_initial(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
@@ -208,6 +208,33 @@ export class Localized {
     static unsupported_message_type(userId: number): string {
         const languageCode = this.getLanguageCode(userId)
         return localized.unsupported_message_type[languageCode]
+    }
+
+    /**
+     * - ru: 🧹 Твои идентификаторы *app_id*, *app_hash* и *session_id* были удалены. Не забудь также разлогинить меня/завершить сессию через Telegram клиент.Пока 👋🏻
+     * - en: 🧹 Your *app_id*, *app_hash*, and *session_id* IDs have been deleted. Don't forget to also log me out/end the session via the Telegram client.See you 👋🏻
+     */
+    static user_ids_have_been_cleared(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.user_ids_have_been_cleared[languageCode]
+    }
+
+    /**
+     * - ru: 🧑🏻‍🦽‍➡️  Твой *app_id* и *app_hash* недействителен.
+     * - en: 🧑🏻‍🦽‍➡️  Your *app_id* and *app_hash* are invalid.
+     */
+    static invalid_app_id_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.invalid_app_id_message[languageCode]
+    }
+
+    /**
+     * - ru: 👌🏻  Обновить
+     * - en: 👌🏻  Update
+     */
+    static invalid_cred_positive_action(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.invalid_cred_positive_action[languageCode]
     }
 
     private static getLanguageCode(userId: number): string {

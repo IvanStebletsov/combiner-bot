@@ -8,6 +8,7 @@ import { CoreErrorHandler } from "./Helpers/CoreErrorHandler"
 import { CallbackQuery } from "./Handlers/CallbackHandler/CallbackQuery"
 import { generateUpdateMiddleware } from "telegraf-middleware-console-time/dist"
 import { TablesQueries as tablesQueries } from "./Database/SQLQueries/TablesQueries"
+import { BotSessionData } from "./Types/BotSessionData"
 
 dotenv.config()
 
@@ -59,6 +60,12 @@ class App {
 			}
 			this.callbackHandler.handleAuthorize(context)
 		})
+		this.bot.command(Command.ClearMyIds, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
+			this.commandHandler.handleClearIds(context)
+		})
 
 		// Handle events
 		this.bot.callbackQuery(CallbackQuery.GiveAppCreds().regex, (context) =>
@@ -67,7 +74,6 @@ class App {
 		this.bot.callbackQuery(CallbackQuery.GiveAuthCreds().regex, (context) =>
 			this.callbackHandler.handleGiveAuthCreds(context)
 		)
-		this.bot.callbackQuery(CallbackQuery.AddApiId().regex, (context) => this.callbackHandler.handleAddApiId(context))
 		this.bot.callbackQuery(CallbackQuery.Authorize().regex, (context) => this.callbackHandler.handleAuthorize(context))
 		this.bot.callbackQuery(CallbackQuery.HowToGrantAccess().regex, (context) =>
 			this.commandHandler.handleHowToGrantAccess(context)

@@ -4,6 +4,11 @@ import { UsersService } from "../../Services/UserService/UserService"
 import { TelegramService } from "../../Services/TelegramService/TelegramService"
 import { BotContext } from "../../Types/BotContext"
 import { CoreUtils } from "../../Helpers/CoreUtils"
+import { UserServiceError } from "../../Types/Errors/UserServiceError"
+import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
+import { InlineKeyboardBuilder } from "../../Helpers/InlineKeyboardBuilder"
+import { CallbackQuery } from "./CallbackQuery"
+import { AuthStep } from "../../Types/AuthStep"
 
 export class CallbackHandler {
 	private usersService: UsersService
@@ -64,9 +69,9 @@ export class CallbackHandler {
 								return
 							}
 
-							context.session.authStep = "app_hash"
-
 							await CoreUtils.deleteMessagesForDeletion(context)
+
+							context.session.authStep = "app_hash"
 
 							await context
 								.reply(Localized.add_app_hash_message(context.from.id), {
@@ -139,6 +144,32 @@ export class CallbackHandler {
 			.catch(async (error) => {
 				await CoreUtils.deleteMessagesForDeletion(context)
 				CoreErrorHandler.handle(error)
+
+				if (!context.from) {
+					return
+				}
+
+				if (error instanceof UserServiceError) {
+					if (error.code == "fetching_api_id" || error.code == "fetching_api_hash") {
+						await this.handleGiveAppCreds(context)
+					}
+				} else if (error instanceof TelegramServiceError) {
+					if (error.code == "client_creation") {
+						await this.handleGiveAppCreds(context)
+					} else if (error.code == "invalid_api_creds") {
+						context
+							.reply(Localized.invalid_app_id_message(context.from?.id), {
+								parse_mode: "Markdown",
+								reply_markup: InlineKeyboardBuilder.makeKeyboard([
+									[Localized.invalid_cred_positive_action(context.from.id), CallbackQuery.GiveAppCreds().query]
+								])
+							})
+							.then((message) => {
+								context.session.messageForDeletion.push(message.message_id)
+							})
+							.catch(async (error) => CoreErrorHandler.handle(error))
+					}
+				}
 			})
 	}
 

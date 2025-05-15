@@ -1,29 +1,37 @@
+import { CoreUtils } from "../../Helpers/CoreUtils"
 import { BaseError } from "./BaseError"
 import { ErrorCode } from "./ErrorCode"
 
 export class TelegramServiceError extends BaseError {
 	constructor(
-		code: "no_api_id" | "no_api_hash" | "user_not_authorized" | "no_chat_with_id" | "no_chats_in_folder" | ErrorCode
+		code:
+			| "user_not_authorized"
+			| "no_chat_with_id"
+			| "no_chats_in_folder"
+			| "client_creation"
+			| "invalid_api_creds"
+			| ErrorCode,
+		error?: any
 	) {
 		var message = "❌ Something went wrong"
 		var errorCode = TelegramServiceError.makeErrorCode(0)
 
 		switch (code) {
-			case "no_api_id":
-				errorCode = TelegramServiceError.makeErrorCode(1)
-				message = "🪪  There is no API ID"
-				break
-			case "no_api_hash":
-				errorCode = TelegramServiceError.makeErrorCode(2)
-				message = "#️⃣  There is no API Hash"
-				break
 			case "user_not_authorized":
-				errorCode = TelegramServiceError.makeErrorCode(3)
-				message = "🙅🏻‍♂️  User is not authorized"
+				errorCode = TelegramServiceError.makeErrorCode(1)
+				message = `🙅🏻‍♂️  User is not authorized${CoreUtils.isNotEmpty(error) ? ` Error:\n${error}.` : `.`}`
 				break
 			case "no_chats_in_folder":
-				errorCode = TelegramServiceError.makeErrorCode(4)
-				message = "🤷🏻‍♂️  Thera are no chats in this folder"
+				errorCode = TelegramServiceError.makeErrorCode(2)
+				message = `🤷🏻‍♂️  Thera are no chats in this folder.${CoreUtils.isNotEmpty(error) ? ` Error:\n${error}.` : `.`}`
+				break
+			case "client_creation":
+				errorCode = TelegramServiceError.makeErrorCode(3)
+				message = `⚙️  Telegtam Client creation has failed${CoreUtils.isNotEmpty(error) ? ` with the error:\n${error}.` : `.`}`
+				break
+			case "invalid_api_creds":
+				errorCode = TelegramServiceError.makeErrorCode(3)
+				message = `🪪  Telegtam Client start has failed${CoreUtils.isNotEmpty(error) ? ` with the error:\n${error}.` : `.`}`
 				break
 		}
 

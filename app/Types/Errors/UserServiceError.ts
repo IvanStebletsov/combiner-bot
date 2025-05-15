@@ -16,6 +16,7 @@ export class UserServiceError extends BaseError {
 			| "fetching_session"
 			| "saving_session"
 			| "last_seen_date_update"
+			| "clearing_user_ids"
 			| ErrorCode,
 		userId: number,
 		error?: any
@@ -68,12 +69,16 @@ export class UserServiceError extends BaseError {
 				errorCode = UserServiceError.makeErrorCode(11)
 				message = `🚦  Last seen date update for the user the with ID: ${userId} has failed${CoreUtils.isNotEmpty(error) ? ` with the error:\n${error}.` : `.`}`
 				break
+			case "clearing_user_ids":
+				errorCode = UserServiceError.makeErrorCode(11)
+				message = `🧹  Clearing user ids for the user the with ID: ${userId} has failed${CoreUtils.isNotEmpty(error) ? ` with the error:\n${error}.` : `.`}`
+				break
 		}
 
 		super(code, message, errorCode)
 	}
 
 	private static makeErrorCode(code: number): number {
-		return Number(`053${code}`)
+		return Number(`53${code}`)
 	}
 }
