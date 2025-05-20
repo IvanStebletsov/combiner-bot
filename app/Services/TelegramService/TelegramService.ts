@@ -13,7 +13,6 @@ import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
 import { TelegramFolder } from "../../Types/TelegramFolder"
 import { Message } from "../../Models/Message"
 import { CoreUtils } from "../../Helpers/CoreUtils"
-import { error } from "console"
 import { RPCError } from "telegram/errors/RPCBaseErrors"
 
 export class TelegramService {
@@ -42,8 +41,11 @@ export class TelegramService {
 			onError: (error) => {
 				if (error instanceof RPCError) {
 					console.log(JSON.stringify(error, null, 2))
-					if (error.code == 400) {
-						return Promise.reject(new TelegramServiceError("invalid_api_creds"))
+					switch (error.code) {
+						case 400:
+							return Promise.reject(new TelegramServiceError("invalid_api_creds"))
+						case 406:
+							return Promise.reject(new TelegramServiceError("auth_key_duplicated"))
 					}
 				}
 				CoreErrorHandler.handle(error)
@@ -171,7 +173,7 @@ export class TelegramService {
 					id = Number(dialog.inputEntity.userId)
 				}
 
-				CoreLogger.log([{ text: `[DIALOG]: ${dialog.title} - ${dialog.unreadCount} (${id})`, fg: "green" }])
+				// CoreLogger.log([{ text: `[DIALOG]: ${dialog.title} - ${dialog.unreadCount} (${id})`, fg: "green" }])
 			}
 
 			return Promise.resolve(unreadChats)
@@ -190,18 +192,22 @@ export class TelegramService {
 			return Promise.reject(error)
 		})
 
-		if (!client.connected) {
-			await client.connect()
+		try {
+			if (!client.connected) {
+				await client.connect()
+			}
+		} catch (error) {
+			return Promise.reject(error)
 		}
 
 		const isAuthorized = await client.checkAuthorization()
+
 		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
 
 		if (isAuthorized) {
 			const chats = await client.getDialogs()
-			const exactChat = await client.getEntity(chatId)
-			console.log("CHAT:", JSON.stringify(exactChat, null, 2))
 			const chat = chats.find((chat) => Number(chat.id) == chatId)
+			const chatEntity = await client.getEntity(chatId)
 
 			if (!chat) {
 				return Promise.reject(new TelegramServiceError("no_chat_with_id"))
@@ -209,20 +215,13 @@ export class TelegramService {
 
 			var unreadMessages: Array<Message> = []
 
-			const unreadMessagesCount = chat.unreadCount > 0 ? Math.min(300, chat.unreadCount) : undefined
+			const readInboxMaxId = chat.dialog.readInboxMaxId
 
-			CoreLogger.log([
-				{ text: `[UNREAD MESSAGES]:`, fg: "green" },
-				{ text: ` ${chat.unreadCount} (${unreadMessagesCount})` }
-			])
-
-			if (!unreadMessagesCount) {
+			if (!readInboxMaxId) {
 				return Promise.resolve("[]")
 			}
 
-			const messages = await client.getMessages(chat.entity, { limit: unreadMessagesCount })
-
-			for await (const message of messages) {
+			for await (const message of client.iterMessages(chatEntity, { minId: readInboxMaxId, limit: 300 })) {
 				if (!message.text) {
 					continue
 				}
@@ -261,14 +260,15 @@ export class TelegramService {
 				}
 
 				const date = new Date(message.date * 1000)
-				const unreadMessage = new Message(username, message.date, date, message.text)
+				const unreadMessage = new Message(username, message.date, date, CoreUtils.convertMarkdownToHtml(message.text))
 				unreadMessages.push(unreadMessage)
 			}
 
 			unreadMessages = unreadMessages.sort((lhs, rhs) => rhs.date.getTime() - lhs.date.getTime())
 			const jsonUnreadMessages = JSON.stringify(unreadMessages)
 
-			CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null, 4)}`, fg: "green" }])
+			CoreLogger.log([{ text: `\n[MESSAGES]: ${JSON.stringify(unreadMessages, null, 2)}`, fg: "green" }])
+			CoreLogger.log([{ text: `\n[UNREAD MESSAGES COUNT]: ${unreadMessages.length}`, fg: "green" }])
 
 			return Promise.resolve(jsonUnreadMessages)
 		} else {
@@ -281,6 +281,8 @@ export class TelegramService {
 		if (!context.from) {
 			return Promise.reject(new TelegramServiceError("no_user_id"))
 		}
+
+		this.state.deleteTelegramClient(context.from.id)
 
 		var apiId: number | undefined
 		var apiHash: string | undefined

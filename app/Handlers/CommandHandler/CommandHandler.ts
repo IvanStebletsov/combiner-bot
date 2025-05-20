@@ -170,6 +170,11 @@ export class CommandHandler {
 			})
 	}
 
+	async handleListOfAllChats(context: BotContext) {
+		await CoreUtils.deleteMessagesForDeletion(context)
+		await this.handleListOfChats(context, false)
+	}
+
 	async handleListOfAllUnreadedChats(context: BotContext) {
 		await CoreUtils.deleteMessagesForDeletion(context)
 		await this.handleListOfChats(context, true)
@@ -181,7 +186,7 @@ export class CommandHandler {
 		}
 
 		var folderId: number | undefined
-		var allUnread = allUnread
+		var allUnreadChats = allUnread
 
 		if (context.callbackQuery?.data) {
 			const callbackQuery = CoreUtils.callbackQueryToUrl(context.callbackQuery.data)
@@ -190,15 +195,15 @@ export class CommandHandler {
 				folderId = Number(callbackQuery.searchParams.get("fd_id"))
 			}
 
-			if (callbackQuery.searchParams.get("a_urnd")) {
-				allUnread = Boolean(callbackQuery.searchParams.get("a_urnd"))
+			if (callbackQuery.searchParams.get("a_unrd")) {
+				allUnreadChats = Boolean(callbackQuery.searchParams.get("a_unrd"))
 			}
 		}
 
 		const loadingMessage = await this.sendLoadingMessage(context)
 
 		await this.telegramService
-			.getChats(context, allUnread, folderId)
+			.getChats(context, allUnreadChats, folderId)
 			.then(async (unreadChats) => {
 				if (!context.from) {
 					return
@@ -235,13 +240,13 @@ export class CommandHandler {
 					const arrows: Array<[string, string]> = []
 
 					if (page > 0) {
-						arrows.push(["◀️", CallbackQuery.ListOfChats(allUnread, page - 1, folderId, foldersPage).query])
+						arrows.push(["◀️", CallbackQuery.ListOfChats(allUnreadChats, page - 1, folderId, foldersPage).query])
 					}
 
 					arrows.push([`${page + 1} / ${pages.length}`, CallbackQuery.DoNothing().query])
 
 					if (page < pages.length - 1) {
-						arrows.push(["▶️", CallbackQuery.ListOfChats(allUnread, page + 1, folderId, foldersPage).query])
+						arrows.push(["▶️", CallbackQuery.ListOfChats(allUnreadChats, page + 1, folderId, foldersPage).query])
 					}
 
 					buttons.push(arrows)
@@ -342,7 +347,7 @@ export class CommandHandler {
 							parse_mode: "HTML"
 						})
 						.catch(async (error) => {
-							CoreErrorHandler.handle(error)
+							CoreErrorHandler.handle(error, context)
 
 							await this.deleteLoadingMessage(context, loadingMessage)
 						})
@@ -361,12 +366,11 @@ export class CommandHandler {
 						.reply(part, {
 							parse_mode: "HTML"
 						})
-						.catch(async (error) => CoreErrorHandler.handle(error))
+						.catch(async (error) => CoreErrorHandler.handle(error, context))
 				}
 			})
 			.catch(async (error) => {
-				CoreErrorHandler.handle(error)
-
+				await CoreErrorHandler.handle(error, context)
 				await this.deleteLoadingMessage(context, loadingMessage)
 			})
 	}

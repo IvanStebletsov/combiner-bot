@@ -10,6 +10,7 @@ export class TelegramServiceError extends BaseError {
 			| "no_chats_in_folder"
 			| "client_creation"
 			| "invalid_api_creds"
+			| "auth_key_duplicated"
 			| ErrorCode,
 		error?: any
 	) {

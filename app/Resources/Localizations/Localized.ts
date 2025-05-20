@@ -229,6 +229,15 @@ export class Localized {
     }
 
     /**
+     * - ru: 🔑  Твой *auth_key* используется в двух сессиях параллельно, заверши одну из сессий.
+     * - en: 🔑  Your *auth_key* is used in two sessions in parallel, completed one of the sessions.
+     */
+    static auth_key_duplicated_message(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.auth_key_duplicated_message[languageCode]
+    }
+
+    /**
      * - ru: 👌🏻  Обновить
      * - en: 👌🏻  Update
      */

@@ -42,6 +42,12 @@ class App {
 			}
 			this.commandHandler.handleListOfFolders(context)
 		})
+		this.bot.command(Command.ListOfAllChats, (context) => {
+			if (context.message) {
+				context.session.messageForDeletion.push(context.message.message_id)
+			}
+			this.commandHandler.handleListOfAllChats(context)
+		})
 		this.bot.command(Command.ListOfAllUnreadedChats, (context) => {
 			if (context.message) {
 				context.session.messageForDeletion.push(context.message.message_id)

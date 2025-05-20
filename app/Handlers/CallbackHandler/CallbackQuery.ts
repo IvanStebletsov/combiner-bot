@@ -28,7 +28,7 @@ export class CallbackQuery {
 		foldersPage?: number
 	): { query: string; regex: RegExp } {
 		return this.makeQuery("chts_lst", {
-			a_urnd: allUnread,
+			a_unrd: allUnread,
 			pg: page,
 			fd_id: folderId,
 			fd_pg: foldersPage

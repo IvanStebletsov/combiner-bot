@@ -6,9 +6,6 @@ import { BotContext } from "../../Types/BotContext"
 import { CoreUtils } from "../../Helpers/CoreUtils"
 import { UserServiceError } from "../../Types/Errors/UserServiceError"
 import { TelegramServiceError } from "../../Types/Errors/TelegramServiceError"
-import { InlineKeyboardBuilder } from "../../Helpers/InlineKeyboardBuilder"
-import { CallbackQuery } from "./CallbackQuery"
-import { AuthStep } from "../../Types/AuthStep"
 
 export class CallbackHandler {
 	private usersService: UsersService
@@ -157,17 +154,7 @@ export class CallbackHandler {
 					if (error.code == "client_creation") {
 						await this.handleGiveAppCreds(context)
 					} else if (error.code == "invalid_api_creds") {
-						context
-							.reply(Localized.invalid_app_id_message(context.from?.id), {
-								parse_mode: "Markdown",
-								reply_markup: InlineKeyboardBuilder.makeKeyboard([
-									[Localized.invalid_cred_positive_action(context.from.id), CallbackQuery.GiveAppCreds().query]
-								])
-							})
-							.then((message) => {
-								context.session.messageForDeletion.push(message.message_id)
-							})
-							.catch(async (error) => CoreErrorHandler.handle(error))
+						CoreErrorHandler.handle(error, context)
 					}
 				}
 			})

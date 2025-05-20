@@ -8,6 +8,7 @@ export type ErrorCode = // Bot Errors
 		| "no_chats_in_folder"
 		| "client_creation"
 		| "invalid_api_creds"
+		| "auth_key_duplicated"
 		// UserService Errors
 		| "checking_user_existance"
 		| "saving_user"
