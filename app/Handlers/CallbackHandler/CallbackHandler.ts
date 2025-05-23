@@ -171,4 +171,31 @@ export class CallbackHandler {
 			}
 		}
 	}
+
+	async handleMarkAsRead(context: BotContext) {
+		if (context.callbackQuery?.data) {
+			const callbackQuery = CoreUtils.callbackQueryToUrl(context.callbackQuery.data)
+
+			if ((callbackQuery.searchParams.get("cid"), context.chat?.id)) {
+				const cid = Number(callbackQuery.searchParams.get("cid"))
+				const mid = Number(callbackQuery.searchParams.get("mid"))
+
+				await this.telegramService
+					.markChatAsRead(context, cid)
+					.then(async () => {
+						console.log(context.chat?.id, mid)
+						if (!context.from || !context.chat || !mid) {
+							return
+						}
+
+						await context.api
+							.editMessageReplyMarkup(context.chat.id, mid, {
+								reply_markup: undefined
+							})
+							.catch(async (error) => CoreErrorHandler.handle(error, context))
+					})
+					.catch((error) => CoreErrorHandler.handle(error, context))
+			}
+		}
+	}
 }

@@ -246,6 +246,15 @@ export class Localized {
         return localized.invalid_cred_positive_action[languageCode]
     }
 
+    /**
+     * - ru: 👀  Отметить прочитанным
+     * - en: 👀  Mark as read
+     */
+    static mark_as_read(userId: number): string {
+        const languageCode = this.getLanguageCode(userId)
+        return localized.mark_as_read[languageCode]
+    }
+
     private static getLanguageCode(userId: number): string {
         return CoreCache.shared.get<string>(CoreCacheConstants.languageCode(userId)) ?? "ru"
     }

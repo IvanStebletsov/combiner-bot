@@ -17,6 +17,10 @@ export class CallbackQuery {
 		return this.makeQuery("give_app_creds")
 	}
 
+	static MarkAsRead(chatId?: number, messageId?: number): { query: string; regex: RegExp } {
+		return this.makeQuery("mk_as_rd", { cid: chatId, mid: messageId })
+	}
+
 	static ListOfFolders(page?: number): { query: string; regex: RegExp } {
 		return this.makeQuery("fd_lst", { pg: page })
 	}

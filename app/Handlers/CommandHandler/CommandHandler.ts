@@ -361,10 +361,35 @@ export class CommandHandler {
 
 				await this.deleteLoadingMessage(context, loadingMessage)
 
-				for (const part of responseParts) {
+				for (var index = 0; index < responseParts.length; index++) {
+					if (!context.from) {
+						return
+					}
+
 					await context
-						.reply(part, {
-							parse_mode: "HTML"
+						.reply(responseParts[index], {
+							parse_mode: "HTML",
+							reply_markup:
+								index == responseParts.length - 1 && context.from
+									? InlineKeyboardBuilder.makeKeyboard([
+											[Localized.mark_as_read(context.from.id), CallbackQuery.MarkAsRead(chatId, undefined).query]
+										])
+									: undefined
+						})
+						.then(async (message) => {
+							if (message.reply_markup && context.from) {
+								await context.api
+									.editMessageText(message.chat.id, message.message_id, message.text, {
+										parse_mode: "HTML",
+										reply_markup: InlineKeyboardBuilder.makeKeyboard([
+											[
+												Localized.mark_as_read(context.from.id),
+												CallbackQuery.MarkAsRead(chatId, message.message_id).query
+											]
+										])
+									})
+									.catch((error) => CoreErrorHandler.handle(error))
+							}
 						})
 						.catch(async (error) => CoreErrorHandler.handle(error, context))
 				}

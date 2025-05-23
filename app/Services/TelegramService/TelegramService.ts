@@ -277,6 +277,44 @@ export class TelegramService {
 		}
 	}
 
+	async markChatAsRead(context: BotContext, chatId: number): Promise<undefined> {
+		if (!context.from) {
+			return
+		}
+
+		const client = await this.getClient(context.from.id).catch((error) => {
+			return Promise.reject(error)
+		})
+
+		try {
+			if (!client.connected) {
+				await client.connect()
+			}
+		} catch (error) {
+			return Promise.reject(error)
+		}
+
+		const isAuthorized = await client.checkAuthorization()
+
+		CoreLogger.log([{ text: `[IS AUTHORIZED]: ${isAuthorized}`, fg: "green" }])
+
+		if (isAuthorized) {
+			await client
+				.getEntity(chatId)
+				.then(async (chatEntity) => {
+					await client.markAsRead(chatEntity).catch((error) => {
+						CoreErrorHandler.handle(error, context)
+					})
+				})
+				.catch((error) => {
+					CoreErrorHandler.handle(error, context)
+				})
+		} else {
+			await this.handleUnauthorizedUser(context)
+			return Promise.reject(new TelegramServiceError("user_not_authorized"))
+		}
+	}
+
 	async handleUnauthorizedUser(context: BotContext) {
 		if (!context.from) {
 			return Promise.reject(new TelegramServiceError("no_user_id"))

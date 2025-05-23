@@ -96,6 +96,9 @@ class App {
 		this.bot.callbackQuery(CallbackQuery.DeleteMessage().regex, (context) =>
 			this.callbackHandler.handleDeleteMessage(context)
 		)
+		this.bot.callbackQuery(CallbackQuery.MarkAsRead().regex, (context) =>
+			this.callbackHandler.handleMarkAsRead(context)
+		)
 
 		// Messages
 		this.bot.on("message", (context) => this.messageHandler.handleMessage(context))
