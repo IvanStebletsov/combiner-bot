@@ -3,6 +3,7 @@ import { CoreUtils } from "../Helpers/CoreUtils"
 import { CoreCacheConstants } from "./CoreCacheConstants"
 import { UsersService } from "../Services/UserService/UserService"
 import { BotContext } from "../Types/BotContext"
+import { CoreErrorHandler } from "../Helpers/CoreErrorHandler"
 
 export class CacheMiddleware {
 	private usersService: UsersService
@@ -25,7 +26,17 @@ export class CacheMiddleware {
 
 		const key = CoreCacheConstants.languageCode(context.from.id)
 		const cachedLanguageCode = this.cache.get<string>(key)
-		const savedLanguageCode = await this.usersService.languageCode(context.from.id, process.env.PROJECT_NAME)
+
+		var savedLanguageCode: string | undefined
+
+		await this.usersService
+			.languageCode(context.from.id, process.env.PROJECT_NAME)
+			.then((languageCode) => {
+				savedLanguageCode = languageCode
+			})
+			.catch((error) => {
+				CoreErrorHandler.handle(error)
+			})
 
 		if (CoreUtils.isEmpty(cachedLanguageCode) && CoreUtils.isNotEmpty(savedLanguageCode)) {
 			this.cache.set(savedLanguageCode, key)

@@ -69,8 +69,14 @@ export class UsersService {
 		return this.database
 			.query(query)
 			.then(async () => {
-				if (!(await this.languageCode(userId, projectName))) {
-					return await this.saveLanguageCode(userId, languageCode, projectName)
+				try {
+					if (!(await this.languageCode(userId, projectName))) {
+						return await this.saveLanguageCode(userId, languageCode, projectName)
+					}
+				} catch (error) {
+					const specifiedError = new UserServiceError("saving_user", userId, error)
+					CoreErrorHandler.handle(specifiedError)
+					return Promise.reject(specifiedError)
 				}
 			})
 			.catch((error) => {
